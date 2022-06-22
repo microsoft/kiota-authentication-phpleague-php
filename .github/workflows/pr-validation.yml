@@ -1,0 +1,26 @@
+﻿name: PHP Authentication PHPLeague
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.4.0
+      - name: Setup PHP and Xdebug for Code Coverage report
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: xdebug
+      - name: Install dependencies
+        run: composer install
+      - name: Run static analysis
+        run: ./vendor/bin/phpstan
+      - name: Run tests
+        run: ./vendor/bin/phpunit --coverage-text
