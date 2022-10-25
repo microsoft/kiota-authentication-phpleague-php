@@ -64,11 +64,12 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
             $scopes = ['https://graph.microsoft.com/.default'];
         }
         $this->scopes = $scopes;
-
+        
+        $this->allowedHostsValidator = new AllowedHostsValidator();
         if (empty($allowedHosts)) {
-            $this->allowedHostsValidator = new AllowedHostsValidator(["graph.microsoft.com", "graph.microsoft.us", "dod-graph.microsoft.us", "graph.microsoft.de", "microsoftgraph.chinacloudapi.cn", "canary.graph.microsoft.com"]);
+            $this->allowedHostsValidator->setAllowedHosts(["graph.microsoft.com", "graph.microsoft.us", "dod-graph.microsoft.us", "graph.microsoft.de", "microsoftgraph.chinacloudapi.cn", "canary.graph.microsoft.com"]);
         } else {
-            $this->allowedHostsValidator = new AllowedHostsValidator($allowedHosts);
+            $this->allowedHostsValidator->setAllowedHosts($allowedHosts);
         }
 
         $this->initOauthProvider();
