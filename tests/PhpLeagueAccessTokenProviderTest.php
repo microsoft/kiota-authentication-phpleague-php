@@ -69,7 +69,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
                 }
             ];
             $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
-            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://example.com/users')->wait());
+            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
         }
     }
 
@@ -83,9 +83,25 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
                 new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 5]))
             ];
             $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
-            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://example.com')->wait());
+            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
             // Second call happens before token expires. We should get the existing access token
-            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://example.com')->wait());
+            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
+        }
+    }
+
+    public function testGetAuthorizationTokenEmptyWhenNotHostAllowed(): void
+    {
+        $oauthContexts = $this->getOauthContexts();
+        foreach ($oauthContexts as $tokenRequestContext) {
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, ['https://graph.microsoft.com/.default']);
+            $mockResponses = [
+                new Response(200, [], json_encode(['access_token' => 'abc', 'expires_in' => 5])),
+                new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 5]))
+            ];
+            $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
+            $this->assertEquals(null, $tokenProvider->getAuthorizationTokenAsync('https://example.com')->wait());
+            // Second call happens before token expires. We should get the existing access token
+            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
         }
     }
 
@@ -104,10 +120,10 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
                 },
             ];
             $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
-            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://example.com')->wait());
+            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
             sleep(1);
             // Second call happens when token has already expired
-            $this->assertEquals('xyz', $tokenProvider->getAuthorizationTokenAsync('https://example.com')->wait());
+            $this->assertEquals('xyz', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
         }
     }
 
@@ -128,10 +144,10 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
                 },
             ];
             $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
-            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://example.com')->wait());
+            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
             sleep(1);
             // Second call happens when token has already expired
-            $this->assertEquals('xyz', $tokenProvider->getAuthorizationTokenAsync('https://example.com')->wait());
+            $this->assertEquals('xyz', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
         }
     }
 
