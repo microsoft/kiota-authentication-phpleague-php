@@ -57,14 +57,21 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @param array $scopes
      * @param array $allowedHosts
      */
-    public function __construct(TokenRequestContext $tokenRequestContext, array $scopes, array $allowedHosts = [])
+    public function __construct(TokenRequestContext $tokenRequestContext, array $scopes = [], array $allowedHosts = [])
     {
         $this->tokenRequestContext = $tokenRequestContext;
         if (empty($scopes)) {
-            throw new \InvalidArgumentException("Scopes cannot be empty");
+            $scopes = ['https://graph.microsoft.com/.default'];
         }
         $this->scopes = $scopes;
-        $this->allowedHostsValidator = new AllowedHostsValidator($allowedHosts);
+        
+        $this->allowedHostsValidator = new AllowedHostsValidator();
+        if (empty($allowedHosts)) {
+            $this->allowedHostsValidator->setAllowedHosts(["graph.microsoft.com", "graph.microsoft.us", "dod-graph.microsoft.us", "graph.microsoft.de", "microsoftgraph.chinacloudapi.cn", "canary.graph.microsoft.com"]);
+        } else {
+            $this->allowedHostsValidator->setAllowedHosts($allowedHosts);
+        }
+
         $this->initOauthProvider();
     }
 
