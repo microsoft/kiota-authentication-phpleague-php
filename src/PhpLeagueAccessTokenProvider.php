@@ -60,18 +60,9 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     public function __construct(TokenRequestContext $tokenRequestContext, array $scopes = [], array $allowedHosts = [])
     {
         $this->tokenRequestContext = $tokenRequestContext;
-        if (empty($scopes)) {
-            $scopes = ['https://graph.microsoft.com/.default'];
-        }
         $this->scopes = $scopes;
-        
         $this->allowedHostsValidator = new AllowedHostsValidator();
-        if (empty($allowedHosts)) {
-            $this->allowedHostsValidator->setAllowedHosts(["graph.microsoft.com", "graph.microsoft.us", "dod-graph.microsoft.us", "graph.microsoft.de", "microsoftgraph.chinacloudapi.cn", "canary.graph.microsoft.com"]);
-        } else {
-            $this->allowedHostsValidator->setAllowedHosts($allowedHosts);
-        }
-
+        $this->allowedHostsValidator->setAllowedHosts($allowedHosts);
         $this->initOauthProvider();
     }
 
@@ -80,10 +71,14 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      */
     public function getAuthorizationTokenAsync(string $url): Promise
     {
-        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $parsedUrl = parse_url($url);
+        $scheme = $parsedUrl["scheme"] ?? null;
+        $host = $parsedUrl["host"] ?? null;
+
         if ($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url)) {
             return new FulfilledPromise(null);
         }
+        $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];
         try {
             $params = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
             if ($this->cachedToken) {
