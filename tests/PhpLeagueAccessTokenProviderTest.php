@@ -28,12 +28,6 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
         );
     }
 
-    public function testPassingEmptyScopesThrowsException(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $tokenProvider = new PhpLeagueAccessTokenProvider(new ClientCredentialContext('', '', ''), []);
-    }
-
     public function testPassingMultipleScopes(): void
     {
         $tokenProvider = new PhpLeagueAccessTokenProvider(new ClientCredentialContext(
@@ -55,7 +49,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
     {
         $oauthContexts = $this->getOauthContexts();
         foreach ($oauthContexts as $tokenRequestContext) {
-            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, ['https://graph.microsoft.com/.default']);
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext);
             $mockResponses = [
                 function (Request $request) use ($tokenRequestContext) {
                     $expectedUrl = 'https://login.microsoftonline.com/tenantId/oauth2/v2.0/token';
@@ -77,7 +71,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
     {
         $oauthContexts = $this->getOauthContexts();
         foreach ($oauthContexts as $tokenRequestContext) {
-            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, ['https://graph.microsoft.com/.default']);
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext);
             $mockResponses = [
                 new Response(200, [], json_encode(['access_token' => 'abc', 'expires_in' => 5])),
                 new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 5]))
@@ -89,17 +83,17 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
         }
     }
 
-    public function testGetAuthorizationTokenEmptyWhenNotHostAllowed(): void
+    public function testGetAuthorizationTokenWhenAllowedHostsNotDefined(): void
     {
         $oauthContexts = $this->getOauthContexts();
         foreach ($oauthContexts as $tokenRequestContext) {
-            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, ['https://graph.microsoft.com/.default']);
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext);
             $mockResponses = [
                 new Response(200, [], json_encode(['access_token' => 'abc', 'expires_in' => 5])),
                 new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 5]))
             ];
             $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
-            $this->assertEquals(null, $tokenProvider->getAuthorizationTokenAsync('https://example.com')->wait());
+            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://example.com')->wait());
             // Second call happens before token expires. We should get the existing access token
             $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
         }
