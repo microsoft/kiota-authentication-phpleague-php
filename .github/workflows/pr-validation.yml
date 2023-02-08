@@ -26,11 +26,12 @@ jobs:
       - name: Run static analysis
         run: ./vendor/bin/phpstan
       - name: Run tests
-        if: ${{ matrix.php-version == '8.0' }}
         run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
       - name: Fix code coverage paths
+        if: ${{ matrix.php-version == '8.0' }}
         run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
       - name: SonarCloud Scan
+        if: ${{ matrix.php-version == '8.0' }}
         uses: SonarSource/sonarcloud-github-action@master
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
