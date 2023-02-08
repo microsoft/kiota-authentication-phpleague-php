@@ -26,7 +26,6 @@ jobs:
       - name: Run static analysis
         run: ./vendor/bin/phpstan
       - name: Run tests
-        uses: shivammathur/setup-php@v2
         if: ${{ matrix.php-version == '8.0' }}
         run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
       - name: Fix code coverage paths
