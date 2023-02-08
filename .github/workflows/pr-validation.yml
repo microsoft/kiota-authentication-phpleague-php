@@ -29,7 +29,6 @@ jobs:
         run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
       - id: fix-paths
         name: Fix code coverage paths
-        if: ${{ matrix.php-versions  == '8.0' }}
         run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
       - name: SonarCloud Scan
         if: ${{ matrix.php-versions  == '8.0' }}
