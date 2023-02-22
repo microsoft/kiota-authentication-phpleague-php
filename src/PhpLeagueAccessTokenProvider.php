@@ -12,13 +12,11 @@ namespace Microsoft\Kiota\Authentication;
 use Http\Promise\FulfilledPromise;
 use Http\Promise\Promise;
 use Http\Promise\RejectedPromise;
-use League\OAuth2\Client\Grant\GrantFactory;
 use League\OAuth2\Client\Provider\AbstractProvider;
-use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Kiota\Abstractions\Authentication\AccessTokenProvider;
 use Microsoft\Kiota\Abstractions\Authentication\AllowedHostsValidator;
-use Microsoft\Kiota\Authentication\Oauth\OnBehalfOfGrant;
+use Microsoft\Kiota\Authentication\Oauth\ProviderFactory;
 use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
 
 /**
@@ -47,23 +45,24 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      */
     private ?AccessToken $cachedToken = null;
     /**
-     * @var GenericProvider OAuth 2.0 provider from PHP League library
+     * @var AbstractProvider OAuth 2.0 provider from PHP League library
      */
-    private GenericProvider $oauthProvider;
+    private AbstractProvider $oauthProvider;
 
     /**
      * Creates a new instance
      * @param TokenRequestContext $tokenRequestContext
      * @param array $scopes
      * @param array $allowedHosts
+     * @param AbstractProvider $oauthProvider
      */
-    public function __construct(TokenRequestContext $tokenRequestContext, array $scopes = [], array $allowedHosts = [])
+    public function __construct(TokenRequestContext $tokenRequestContext, array $scopes = [], array $allowedHosts = [], ?AbstractProvider $oauthProvider = null)
     {
         $this->tokenRequestContext = $tokenRequestContext;
         $this->scopes = $scopes;
         $this->allowedHostsValidator = new AllowedHostsValidator();
         $this->allowedHostsValidator->setAllowedHosts($allowedHosts);
-        $this->initOauthProvider();
+        $this->oauthProvider = $oauthProvider ?? ProviderFactory::create($tokenRequestContext);
     }
 
     /**
@@ -117,25 +116,6 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     public function getOauthProvider(): AbstractProvider
     {
         return $this->oauthProvider;
-    }
-
-    /**
-     * Initialises a PHP League provider
-     */
-    private function initOauthProvider(): void
-    {
-        $grantFactory = new GrantFactory();
-        // Add our custom grant type to the registry
-        $grantFactory->setGrant('urn:ietf:params:Oauth:grant-type:jwt-bearer', new OnBehalfOfGrant());
-
-        $this->oauthProvider = new GenericProvider([
-            'urlAccessToken' => "https://login.microsoftonline.com/{$this->tokenRequestContext->getTenantId()}/oauth2/v2.0/token",
-            'urlAuthorize' => "https://login.microsoftonline.com/{$this->tokenRequestContext->getTenantId()}/oauth2/v2.0/authorize",
-            'urlResourceOwnerDetails' => 'https://graph.microsoft.com/oidc/userinfo',
-            'accessTokenResourceOwnerId' => 'id_token'
-        ], [
-            'grantFactory' => $grantFactory
-        ]);
     }
 
 }
