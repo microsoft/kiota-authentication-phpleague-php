@@ -15,7 +15,6 @@ use Http\Promise\RejectedPromise;
 use League\OAuth2\Client\Grant\GrantFactory;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\GenericProvider;
-use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Kiota\Abstractions\Authentication\AccessTokenProvider;
 use Microsoft\Kiota\Abstractions\Authentication\AllowedHostsValidator;
 use Microsoft\Kiota\Authentication\Cache\AccessTokenCache;
@@ -60,6 +59,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @param TokenRequestContext $tokenRequestContext
      * @param array $scopes
      * @param array $allowedHosts
+     * @param AccessTokenCache|null $accessTokenCache
      */
     public function __construct(TokenRequestContext $tokenRequestContext, array $scopes = [], array $allowedHosts = [], ?AccessTokenCache $accessTokenCache = null)
     {
