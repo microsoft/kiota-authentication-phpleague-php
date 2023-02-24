@@ -21,7 +21,6 @@ use Microsoft\Kiota\Authentication\Oauth\ContinuousAccessEvaluationException;
 use Microsoft\Kiota\Authentication\Oauth\ProviderFactory;
 use Microsoft\Kiota\Authentication\Cache\AccessTokenCache;
 use Microsoft\Kiota\Authentication\Cache\InMemoryAccessTokenCache;
-use Microsoft\Kiota\Authentication\Oauth\OnBehalfOfGrant;
 use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
 
 /**
