@@ -8,6 +8,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Http\Promise\FulfilledPromise;
+use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Kiota\Authentication\Oauth\AuthorizationCodeCertificateContext;
 use Microsoft\Kiota\Authentication\Oauth\AuthorizationCodeContext;
 use Microsoft\Kiota\Authentication\Oauth\ClientCredentialCertificateContext;
@@ -17,6 +18,7 @@ use Microsoft\Kiota\Authentication\Oauth\OnBehalfOfCertificateContext;
 use Microsoft\Kiota\Authentication\Oauth\OnBehalfOfContext;
 use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
 use Microsoft\Kiota\Authentication\PhpLeagueAccessTokenProvider;
+use Microsoft\Kiota\Authentication\Test\Stub\StubAccessTokenCache;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 
@@ -84,6 +86,34 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
             $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
             // Second call happens before token expires. We should get the existing access token
             $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
+        }
+    }
+
+    public function testGetAuthorizationTokenUsesCachedToken(): void
+    {
+        $oauthContexts = $this->getOauthContexts();
+        foreach ($oauthContexts as $tokenRequestContext) {
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $stubTokenCache = new StubAccessTokenCache());
+            $stubTokenCache->accessToken = new AccessToken(['access_token' => 'persisted_token', 'expires' => time() + 5]);
+            $mockResponses = [
+                new Response(200, [], json_encode(['access_token' => 'abc', 'expires_in' => 5])),
+            ];
+            $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
+            $this->assertEquals('persisted_token', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
+        }
+    }
+
+    public function testNewAccessTokenIsUpdatedToTheCache(): void
+    {
+        $oauthContexts = $this->getOauthContexts();
+        foreach ($oauthContexts as $tokenRequestContext) {
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $stubTokenCache = new StubAccessTokenCache());
+            $mockResponses = [
+                new Response(200, [], json_encode(['access_token' => 'abc', 'expires_in' => 5])),
+            ];
+            $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
+            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
+            $this->assertEquals('abc', $stubTokenCache->accessToken->getToken());
         }
     }
 

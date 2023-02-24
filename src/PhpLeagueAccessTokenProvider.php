@@ -19,6 +19,9 @@ use Microsoft\Kiota\Abstractions\Authentication\AccessTokenProvider;
 use Microsoft\Kiota\Abstractions\Authentication\AllowedHostsValidator;
 use Microsoft\Kiota\Authentication\Oauth\ContinuousAccessEvaluationException;
 use Microsoft\Kiota\Authentication\Oauth\ProviderFactory;
+use Microsoft\Kiota\Authentication\Cache\AccessTokenCache;
+use Microsoft\Kiota\Authentication\Cache\InMemoryAccessTokenCache;
+use Microsoft\Kiota\Authentication\Oauth\OnBehalfOfGrant;
 use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
 
 /**
@@ -44,29 +47,40 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @var array<string, string>
      */
     private array $scopes;
-    /**
-     * @var AccessToken|null Token object to re-use before expiry
-     */
-    private ?AccessToken $cachedToken = null;
+
     /**
      * @var AbstractProvider OAuth 2.0 provider from PHP League library
      */
     private AbstractProvider $oauthProvider;
 
     /**
+     * @var AccessTokenCache Cache to store access token
+     */
+    private AccessTokenCache $accessTokenCache;
+
+    /**
      * Creates a new instance
      * @param TokenRequestContext $tokenRequestContext
      * @param array $scopes
      * @param array $allowedHosts
-     * @param AbstractProvider|null $oauthProvider
+     * @param AbstractProvider|null $oauthProvider when null, defaults to a Microsoft Identity Authentication Provider
+     * @param AccessTokenCache|null $accessTokenCache defaults to an in-memory cache
      */
-    public function __construct(TokenRequestContext $tokenRequestContext, array $scopes = [], array $allowedHosts = [], ?AbstractProvider $oauthProvider = null)
+    public function __construct(
+        TokenRequestContext $tokenRequestContext,
+        array $scopes = [],
+        array $allowedHosts = [],
+        ?AbstractProvider $oauthProvider = null,
+        ?AccessTokenCache $accessTokenCache = null
+    )
     {
         $this->tokenRequestContext = $tokenRequestContext;
         $this->scopes = $scopes;
         $this->allowedHostsValidator = new AllowedHostsValidator();
         $this->allowedHostsValidator->setAllowedHosts($allowedHosts);
         $this->oauthProvider = $oauthProvider ?? ProviderFactory::create($tokenRequestContext);
+        $this->accessTokenCache = $accessTokenCache === null ? new InMemoryAccessTokenCache() : $accessTokenCache;
+
     }
 
     /**
@@ -81,25 +95,30 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         if ($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url)) {
             return new FulfilledPromise(null);
         }
+
         $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];
         try {
             $params = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
             if ($additionalAuthenticationContext['claims'] ?? false) {
                 $claims = base64_decode($additionalAuthenticationContext['claims']);
-                $this->cachedToken = $this->tryCAETokenRefresh($params, $claims);
-                return new FulfilledPromise($this->cachedToken->getToken());
+                $token = $this->tryCAETokenRefresh($params, $claims);
+                $this->accessTokenCache->persistAccessToken($token);
+                return new FulfilledPromise($token->getToken());
             }
-            if ($this->cachedToken) {
-                if ($this->cachedToken->getExpires() && !$this->cachedToken->hasExpired()) {
-                    return new FulfilledPromise($this->cachedToken->getToken());
+            $cachedToken = $this->accessTokenCache->getAccessToken();
+            if ($cachedToken) {
+                if ($cachedToken->getExpires() && !$cachedToken->hasExpired()) {
+                    return new FulfilledPromise($cachedToken->getToken());
                 }
-                if ($this->cachedToken->getRefreshToken()) {
-                    $this->cachedToken = $this->refreshToken();
-                    return new FulfilledPromise($this->cachedToken->getToken());
+                if ($cachedToken->getRefreshToken()) {
+                    $cachedToken = $this->refreshToken();
+                    $this->accessTokenCache->persistAccessToken($cachedToken);
+                    return new FulfilledPromise($cachedToken->getToken());
                 }
             }
-            $this->cachedToken = $this->requestNewToken($params);
-            return new FulfilledPromise($this->cachedToken->getToken());
+            $token = $this->requestNewToken($params);
+            $this->accessTokenCache->persistAccessToken($token);
+            return new FulfilledPromise($token->getToken());
         } catch (\Exception $ex) {
             return new RejectedPromise($ex);
         }
@@ -138,7 +157,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
             );
         }
         $params = array_merge(
-            $this->tokenRequestContext->getRefreshTokenParams($this->cachedToken->getRefreshToken()),
+            $this->tokenRequestContext->getRefreshTokenParams($this->accessTokenCache->getAccessToken()->getRefreshToken()),
             $params
         );
         // @phpstan-ignore-next-line
@@ -172,7 +191,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      */
     private function tryCAETokenRefresh(array $initialParams, string $claims): AccessToken
     {
-        if ($this->cachedToken && $this->cachedToken->getRefreshToken()) {
+        if ($this->accessTokenCache->getAccessToken() && $this->accessTokenCache->getAccessToken()->getRefreshToken()) {
             try {
                 return $this->refreshToken(['claims' => $claims]);
             } catch (\Exception $ex) {
