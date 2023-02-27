@@ -89,7 +89,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
     {
         $oauthContexts = $this->getOauthContexts();
         foreach ($oauthContexts as $tokenRequestContext) {
-            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], $stubTokenCache = new StubAccessTokenCache());
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $stubTokenCache = new StubAccessTokenCache());
             $stubTokenCache->accessToken = new AccessToken(['access_token' => 'persisted_token', 'expires' => time() + 5]);
             $mockResponses = [
                 new Response(200, [], json_encode(['access_token' => 'abc', 'expires_in' => 5])),
@@ -103,7 +103,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
     {
         $oauthContexts = $this->getOauthContexts();
         foreach ($oauthContexts as $tokenRequestContext) {
-            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], $stubTokenCache = new StubAccessTokenCache());
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $stubTokenCache = new StubAccessTokenCache());
             $mockResponses = [
                 new Response(200, [], json_encode(['access_token' => 'abc', 'expires_in' => 5])),
             ];
