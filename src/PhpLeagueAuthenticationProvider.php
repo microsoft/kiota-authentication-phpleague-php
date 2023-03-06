@@ -34,7 +34,7 @@ class PhpLeagueAuthenticationProvider extends BaseBearerTokenAuthenticationProvi
      * @param array $scopes
      * @param array $allowedHosts
      */
-    public function __construct(TokenRequestContext $tokenRequestContext, array $scopes, array $allowedHosts = [])
+    public function __construct(TokenRequestContext $tokenRequestContext, array $scopes = [], array $allowedHosts = [])
     {
         $this->accessTokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, $scopes, $allowedHosts);
         parent::__construct($this->accessTokenProvider);
