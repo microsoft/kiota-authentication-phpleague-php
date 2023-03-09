@@ -22,6 +22,7 @@ class ClientCredentialCertificateContext extends BaseCertificateContext implemen
 {
     use ApplicationPermissionTrait;
 
+    /** @var array<string, string>  */
     private array $additionalParams;
 
     /**
@@ -30,7 +31,7 @@ class ClientCredentialCertificateContext extends BaseCertificateContext implemen
      * @param string $certificatePath
      * @param string $privateKeyPath
      * @param string $privateKeyPassphrase
-     * @param array $additionalParams
+     * @param array<string, string> $additionalParams
      */
     public function __construct(string $tenantId,
                                 string $clientId,
