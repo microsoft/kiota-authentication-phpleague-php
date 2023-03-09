@@ -8,6 +8,8 @@
 
 namespace Microsoft\Kiota\Authentication\Oauth;
 
+use InvalidArgumentException;
+
 /**
  * Class OnBehalfOfCertificateContext
  *
@@ -27,7 +29,7 @@ class OnBehalfOfCertificateContext extends BaseCertificateContext implements Tok
      */
     private string $assertion;
     /**
-     * @var array
+     * @var array<string,string>
      */
     private array $additionalParams;
 
@@ -38,12 +40,12 @@ class OnBehalfOfCertificateContext extends BaseCertificateContext implements Tok
      * @param string $certificatePath
      * @param string $privateKeyPath
      * @param string $privateKeyPassphrase
-     * @param array $additionalParams <string, string>
+     * @param array<string,string> $additionalParams
      */
     public function __construct(string $tenantId, string $clientId, string $assertion, string $certificatePath, string $privateKeyPath, string $privateKeyPassphrase = '', array $additionalParams = [])
     {
         if (!$assertion) {
-            throw new \InvalidArgumentException("Assertion cannot be empty");
+            throw new InvalidArgumentException("Assertion cannot be empty");
         }
         $this->assertion = $assertion;
         $this->additionalParams = $additionalParams;

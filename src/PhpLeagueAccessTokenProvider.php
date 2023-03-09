@@ -9,6 +9,7 @@
 namespace Microsoft\Kiota\Authentication;
 
 
+use Exception;
 use Http\Promise\FulfilledPromise;
 use Http\Promise\Promise;
 use Http\Promise\RejectedPromise;
@@ -43,7 +44,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      */
     private AllowedHostsValidator $allowedHostsValidator;
     /**
-     * @var array<string, string>
+     * @var array<string>
      */
     private array $scopes;
 
@@ -60,8 +61,8 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     /**
      * Creates a new instance
      * @param TokenRequestContext $tokenRequestContext
-     * @param array $scopes
-     * @param array $allowedHosts
+     * @param array<string> $scopes
+     * @param array<string> $allowedHosts
      * @param AbstractProvider|null $oauthProvider when null, defaults to a Microsoft Identity Authentication Provider
      * @param AccessTokenCache|null $accessTokenCache defaults to an in-memory cache
      */
@@ -99,12 +100,14 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         try {
             $params = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
             if ($additionalAuthenticationContext['claims'] ?? false) {
-                $claims = base64_decode($additionalAuthenticationContext['claims']);
+                $claims = base64_decode(strval($additionalAuthenticationContext['claims']));
                 if ($this->tokenRequestContext->getCacheKey()) {
                     $cachedToken = $this->accessTokenCache->getAccessToken($this->tokenRequestContext->getCacheKey());
-                    $token = $this->tryCAETokenRefresh($cachedToken,$params, $claims);
-                    $this->cacheToken($token);
-                    return new FulfilledPromise($token->getToken());
+                    if ($cachedToken) {
+                        $token = $this->tryCAETokenRefresh($cachedToken,$params, $claims);
+                        $this->cacheToken($token);
+                        return new FulfilledPromise($token->getToken());
+                    }
                 }
             }
 
@@ -260,10 +263,16 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     private function mergeClaims(array $params, string $claims): array
     {
         if ($params['claims'] ?? false) {
-            $claims = json_decode($params['claims'], true);
-            $claims = array_merge_recursive($claims, json_decode($claims));
-            $params['claims'] = json_encode($claims);
-            return $params;
+            $paramClaims = json_decode($params['claims'], true);
+            $newClaims = json_decode($claims, true);
+            if (is_array($paramClaims) && is_array($newClaims)) {
+                $mergedClaims = array_merge_recursive($paramClaims, $newClaims);
+                $mergedClaimsJson = json_encode($mergedClaims);
+                if ($mergedClaimsJson) {
+                    $params['claims'] = $mergedClaimsJson;
+                    return $params;
+                }
+            }
         }
         $params['claims'] = $claims;
         return $params;
