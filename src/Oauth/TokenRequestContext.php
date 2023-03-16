@@ -8,7 +8,6 @@
 
 namespace Microsoft\Kiota\Authentication\Oauth;
 
-use League\OAuth2\Client\Provider\AbstractProvider;
 use Http\Promise\Promise;
 
 /**
@@ -60,6 +59,12 @@ abstract class TokenRequestContext
      * @return string
      */
     abstract public function getTenantId(): string;
+
+    /**
+     * Return the identity of the user, this is used to cache the access token
+     * @return string
+     */
+    abstract public function getIdentity(): string;
 
     /**
      * Whether the client should be enabled for Continuous Access Evaluation

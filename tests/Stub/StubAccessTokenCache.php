@@ -7,15 +7,18 @@ use Microsoft\Kiota\Authentication\Cache\AccessTokenCache;
 
 class StubAccessTokenCache implements AccessTokenCache
 {
-    public ?AccessToken $accessToken = null;
+    /**
+     * @var array<string, AccessToken>
+     */
+    public array $accessTokens = [];
 
-    public function getAccessToken(): ?AccessToken
+    public function getAccessToken(string $identity): ?AccessToken
     {
-        return $this->accessToken;
+        return $this->accessTokens[$identity] ?? null;
     }
 
-    public function persistAccessToken(AccessToken $accessToken): void
+    public function persistAccessToken(string $identity, AccessToken $accessToken): void
     {
-        $this->accessToken = $accessToken;
+        $this->accessTokens[$identity] = $accessToken;
     }
 }

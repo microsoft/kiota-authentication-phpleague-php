@@ -16,15 +16,18 @@ use League\OAuth2\Client\Token\AccessToken;
  */
 class InMemoryAccessTokenCache implements AccessTokenCache
 {
-    private ?AccessToken $accessToken = null;
+    /**
+     * @var array<string, AccessToken>
+     */
+    private array $accessTokens = [];
 
-    public function getAccessToken(): ?AccessToken
+    public function getAccessToken(string $identity): ?AccessToken
     {
-        return $this->accessToken;
+        return $this->accessTokens[$identity] ?? null;
     }
 
-    public function persistAccessToken(AccessToken $accessToken): void
+    public function persistAccessToken(string $identity, AccessToken $accessToken): void
     {
-        $this->accessToken = $accessToken;
+        $this->accessTokens[$identity] = $accessToken;
     }
 }
