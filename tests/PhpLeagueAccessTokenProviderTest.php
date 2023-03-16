@@ -13,6 +13,7 @@ use Microsoft\Kiota\Authentication\Oauth\ClientCredentialCertificateContext;
 use Microsoft\Kiota\Authentication\Oauth\ClientCredentialContext;
 use Microsoft\Kiota\Authentication\Oauth\OnBehalfOfCertificateContext;
 use Microsoft\Kiota\Authentication\Oauth\OnBehalfOfContext;
+use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
 use Microsoft\Kiota\Authentication\PhpLeagueAccessTokenProvider;
 use Microsoft\Kiota\Authentication\Test\Stub\StubAccessTokenCache;
 use PHPUnit\Framework\TestCase;
@@ -88,9 +89,10 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
     public function testGetAuthorizationTokenUsesCachedToken(): void
     {
         $oauthContexts = $this->getOauthContexts();
+        /** @var TokenRequestContext $tokenRequestContext */
         foreach ($oauthContexts as $tokenRequestContext) {
             $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $stubTokenCache = new StubAccessTokenCache());
-            $stubTokenCache->accessToken = new AccessToken(['access_token' => 'persisted_token', 'expires' => time() + 5]);
+            $stubTokenCache->accessTokens[$tokenRequestContext->getIdentity()] = new AccessToken(['access_token' => 'persisted_token', 'expires' => time() + 5]);
             $mockResponses = [
                 new Response(200, [], json_encode(['access_token' => 'abc', 'expires_in' => 5])),
             ];
@@ -102,6 +104,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
     public function testNewAccessTokenIsUpdatedToTheCache(): void
     {
         $oauthContexts = $this->getOauthContexts();
+        /** @var TokenRequestContext $tokenRequestContext */
         foreach ($oauthContexts as $tokenRequestContext) {
             $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $stubTokenCache = new StubAccessTokenCache());
             $mockResponses = [
@@ -109,7 +112,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
             ];
             $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
             $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
-            $this->assertEquals('abc', $stubTokenCache->accessToken->getToken());
+            $this->assertEquals('abc', $stubTokenCache->accessTokens[$tokenRequestContext->getIdentity()]->getToken());
         }
     }
 

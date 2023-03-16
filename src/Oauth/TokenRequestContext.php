@@ -42,4 +42,10 @@ interface TokenRequestContext
      * @return string
      */
     public function getTenantId(): string;
+
+    /**
+     * Return the identity of the user, this is used to cache the access token
+     * @return string
+     */
+    public function getIdentity(): string;
 }

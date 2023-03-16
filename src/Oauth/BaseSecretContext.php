@@ -78,4 +78,9 @@ class BaseSecretContext implements TokenRequestContext
     {
         return $this->tenantId;
     }
+
+    public function getIdentity(): string
+    {
+        return $this->getTenantId();
+    }
 }

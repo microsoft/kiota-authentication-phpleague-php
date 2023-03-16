@@ -18,7 +18,7 @@ interface AccessTokenCache
      *
      * @return AccessToken|null
      */
-    public function getAccessToken(): ?AccessToken;
+    public function getAccessToken(string $identity): ?AccessToken;
 
     /**
      * Persist access token in cache
@@ -26,5 +26,5 @@ interface AccessTokenCache
      * @param AccessToken $accessToken
      * @return void
      */
-    public function persistAccessToken(AccessToken $accessToken): void;
+    public function persistAccessToken(string $identity, AccessToken $accessToken): void;
 }

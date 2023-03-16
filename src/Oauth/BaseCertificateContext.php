@@ -128,4 +128,9 @@ class BaseCertificateContext implements TokenRequestContext
             'x5t' => JWT::urlsafeB64Encode( hex2bin($this->certificateFingerprint))
         ]);
     }
+
+    public function getIdentity(): string
+    {
+        return $this->clientId;
+    }
 }

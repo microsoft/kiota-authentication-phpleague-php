@@ -87,7 +87,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];
         try {
             $params = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
-            $accessToken = $this->accessTokenCache->getAccessToken();
+            $accessToken = $this->accessTokenCache->getAccessToken($this->tokenRequestContext->getIdentity());
             if ($accessToken) {
                 if ($accessToken->getExpires() && $accessToken->hasExpired()) {
                     if ($accessToken->getRefreshToken()) {
@@ -95,12 +95,12 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
                     } else {
                         $accessToken = $this->oauthProvider->getAccessToken($this->tokenRequestContext->getGrantType(), $params);
                     }
-                    $this->accessTokenCache->persistAccessToken($accessToken);
+                    $this->accessTokenCache->persistAccessToken($this->tokenRequestContext->getIdentity(), $accessToken);
                 }
                 return new FulfilledPromise($accessToken->getToken());
             }
             $accessToken = $this->oauthProvider->getAccessToken($this->tokenRequestContext->getGrantType(), $params);
-            $this->accessTokenCache->persistAccessToken($accessToken);
+            $this->accessTokenCache->persistAccessToken($this->tokenRequestContext->getIdentity(), $accessToken);
             return new FulfilledPromise($accessToken->getToken());
         } catch (\Exception $ex) {
             return new RejectedPromise($ex);
