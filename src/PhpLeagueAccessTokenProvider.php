@@ -54,7 +54,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @param TokenRequestContext $tokenRequestContext
      * @param array $scopes
      * @param array $allowedHosts
-     * @param AbstractProvider $oauthProvider
+     * @param AbstractProvider|null $oauthProvider
      */
     public function __construct(TokenRequestContext $tokenRequestContext, array $scopes = [], array $allowedHosts = [], ?AbstractProvider $oauthProvider = null)
     {
