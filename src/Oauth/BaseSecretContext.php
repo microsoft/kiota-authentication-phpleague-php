@@ -8,6 +8,8 @@
 
 namespace Microsoft\Kiota\Authentication\Oauth;
 
+use League\OAuth2\Client\Provider\AbstractProvider;
+
 /**
  * Class BaseSecretContext
  *
@@ -18,7 +20,7 @@ namespace Microsoft\Kiota\Authentication\Oauth;
  * @license https://opensource.org/licenses/MIT MIT License
  * @link https://developer.microsoft.com/graph
  */
-class BaseSecretContext implements TokenRequestContext
+class BaseSecretContext extends TokenRequestContext
 {
     /**
      * @var string Tenant Id

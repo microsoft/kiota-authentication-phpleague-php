@@ -12,7 +12,7 @@ namespace Microsoft\Kiota\Authentication\Oauth;
 use Firebase\JWT\JWT;
 use Ramsey\Uuid\Uuid;
 
-class BaseCertificateContext implements TokenRequestContext
+class BaseCertificateContext extends TokenRequestContext
 {
     /**
      * @var string Tenant Id
