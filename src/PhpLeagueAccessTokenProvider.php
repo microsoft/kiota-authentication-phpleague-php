@@ -13,9 +13,11 @@ use Http\Promise\FulfilledPromise;
 use Http\Promise\Promise;
 use Http\Promise\RejectedPromise;
 use League\OAuth2\Client\Provider\AbstractProvider;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Kiota\Abstractions\Authentication\AccessTokenProvider;
 use Microsoft\Kiota\Abstractions\Authentication\AllowedHostsValidator;
+use Microsoft\Kiota\Authentication\Oauth\ContinuousAccessEvaluationException;
 use Microsoft\Kiota\Authentication\Oauth\ProviderFactory;
 use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
 
@@ -68,7 +70,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     /**
      * @inheritDoc
      */
-    public function getAuthorizationTokenAsync(string $url): Promise
+    public function getAuthorizationTokenAsync(string $url, array $additionalAuthenticationContext = []): Promise
     {
         $parsedUrl = parse_url($url);
         $scheme = $parsedUrl["scheme"] ?? null;
@@ -80,17 +82,23 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];
         try {
             $params = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
-            if ($this->cachedToken) {
-                if ($this->cachedToken->getExpires() && $this->cachedToken->hasExpired()) {
-                    if ($this->cachedToken->getRefreshToken()) {
-                        // @phpstan-ignore-next-line
-                        $this->cachedToken = $this->oauthProvider->getAccessToken('refresh_token', $this->tokenRequestContext->getRefreshTokenParams($this->cachedToken->getRefreshToken()));
-                    } else {
-                        // @phpstan-ignore-next-line
-                        $this->cachedToken = $this->oauthProvider->getAccessToken($this->tokenRequestContext->getGrantType(), $params);
-                    }
-                }
+            if (($additionalAuthenticationContext['claims'] ?? false)) {
+                $claims = json_decode(base64_decode($additionalAuthenticationContext['claims']), true);
+                $this->tryCAETokenRefresh($claims);
+            }
+            if ($this->cachedToken
+                && $this->cachedToken->getExpires()
+                && $this->cachedToken->hasExpired()
+                && $this->cachedToken->getRefreshToken()
+            ) {
+                $this->cachedToken = $this->refreshToken();
                 return new FulfilledPromise($this->cachedToken->getToken());
+            }
+            if ($this->tokenRequestContext->isCAEEnabled()) {
+                $params = array_merge_recursive(
+                    $params,
+                    ['claims' => ['access_token' => ['xms_cc' => ['values' => ['cp1']]]]]
+                );
             }
             // @phpstan-ignore-next-line
             $this->cachedToken = $this->oauthProvider->getAccessToken($this->tokenRequestContext->getGrantType(), $params);
@@ -116,6 +124,65 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     public function getOauthProvider(): AbstractProvider
     {
         return $this->oauthProvider;
+    }
+
+    /**
+     * Refreshes token
+     * @param array $params
+     * @return AccessToken
+     * @throws IdentityProviderException
+     */
+    private function refreshToken(array $params = []): AccessToken
+    {
+        $params = array_merge_recursive(
+            $this->tokenRequestContext->getRefreshTokenParams($this->cachedToken->getRefreshToken()),
+            $params
+        );
+        // @phpstan-ignore-next-line
+        return $this->oauthProvider->getAccessToken('refresh_token', $params);
+    }
+
+    /**
+     * Attempts to get a new access token using the refresh token + claims.
+     * If that fails, call the redirect callback if it's available. Otherwise, fail with an exception containing the
+     * claims
+     *
+     * @param string $claims
+     * @throws ContinuousAccessEvaluationException
+     */
+    private function tryCAETokenRefresh(string $claims): void
+    {
+        if ($this->cachedToken && $this->cachedToken->getRefreshToken()) {
+           try {
+               $this->cachedToken = $this->refreshToken(['claims' => $claims]);
+           } catch (\Exception $ex) {
+               $this->handleFailedCAETokenRefresh($claims);
+           }
+       }
+       $this->handleFailedCAETokenRefresh($claims);
+    }
+
+    /**
+     * @param string $claims
+     * @throws ContinuousAccessEvaluationException
+     */
+    private function handleFailedCAETokenRefresh(string $claims): void
+    {
+        if (!$this->tokenRequestContext->getCAERedirectCallback()) {
+            throw new ContinuousAccessEvaluationException(
+                "Token refresh failed and no redirect callback was provided.
+                Use the claims property and redirect your customer to the login page",
+                $claims
+            );
+        }
+        $context = $this->tokenRequestContext->getCAERedirectCallback()($claims)->wait();
+        if (!$context instanceof TokenRequestContext) {
+            throw new ContinuousAccessEvaluationException(
+                "Redirect callback did not return a valid TokenRequestContext",
+                $claims
+            );
+        }
+        $this->tokenRequestContext = $context;
     }
 
 }

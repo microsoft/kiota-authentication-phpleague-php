@@ -9,6 +9,7 @@
 namespace Microsoft\Kiota\Authentication\Oauth;
 
 use League\OAuth2\Client\Provider\AbstractProvider;
+use Http\Promise\Promise;
 
 /**
  * Class TokenRequestContext
@@ -20,19 +21,19 @@ use League\OAuth2\Client\Provider\AbstractProvider;
 abstract class TokenRequestContext
 {
     /**
-     * @var null|callable(string $claim): TokenRequestContext
+     * Should return Promise that resolves with a new TokenRequestContext object to be used for a new token request
+     * @var null|callable(string $claims): Promise
      */
     private $caeRedirectCallback = null;
 
     /**
      * Whether this client should add claims to inform API that it can handle claims challenges.
-     * Enabled by default so that tenants that enable CAE work out of the box
-     * We don't expect issues/claims challenges from tenants that don't enable CAE despite adding the claims challenge
-     * to the token request
-     * https://learn.microsoft.com/en-us/azure/active-directory/conditional-access/concept-continuous-access-evaluation
+     * Disabled by default since different Identity Providers can be used with this lib. Not only Azure which understands
+     * the cp1 claim
+     * https://learn.microsoft.com/en-us/azure/active-directory/develop/claims-challenge?tabs=dotnet
      * @var bool
      */
-    private bool $caeEnabled = true;
+    private bool $caeEnabled = false;
 
     /**
      * Return dictionary with OAuth 2.0 request parameters to be passed to PHP League's OAuth provider
@@ -74,9 +75,9 @@ abstract class TokenRequestContext
     /**
      * Returns a callback that can be called to redirect the logged-in user to the Microsoft Identity login page
      * when this lib is unable to refresh the token using CAE claims.
-     * If this callback returns a new token request context with the new authentication code/assertion then a new token
-     * is requested.
-     * @return null|callable(string $claim): TokenRequestContext|null
+     * If this callback returns a Promise that resolves to a new token request context with the new authentication
+     * code/assertion then a new token is requested.
+     * @return null|callable(string $claims): Promise
      */
     public function getCAERedirectCallback(): ?callable
     {
