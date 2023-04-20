@@ -164,7 +164,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
                 function (Request $request) {
                     parse_str($request->getBody()->getContents(), $requestBodyMap);
                     $this->assertArrayHasKey('claims', $requestBodyMap);
-                    $this->assertEquals(json_encode(PhpLeagueAccessTokenProvider::CP1_CLAIM), $requestBodyMap['claims']);
+                    $this->assertEquals(PhpLeagueAccessTokenProvider::CP1_CLAIM, $requestBodyMap['claims']);
                     return new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 1]));
                 }
             ];
@@ -183,7 +183,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
                 function (Request $request) {
                     parse_str($request->getBody()->getContents(), $requestBodyMap);
                     $this->assertArrayHasKey('claims', $requestBodyMap);
-                    $this->assertEquals(json_encode(PhpLeagueAccessTokenProvider::CP1_CLAIM), $requestBodyMap['claims']);
+                    $this->assertEquals(PhpLeagueAccessTokenProvider::CP1_CLAIM, $requestBodyMap['claims']);
                     return new Response(200, [], json_encode(['access_token' => 'xyz', 'refresh_token' => 'refresh', 'expires_in' => 5]));
                 },
                 function (Request $refreshTokenRequest) {
@@ -270,7 +270,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
         foreach ($oauthContexts as $context) {
             $context->setCAEEnabled(true);
             $callbackExecuted = false;
-            $context->setCAERedirectCallback(function () use (&$callbackExecuted, $context) {
+            $context->setCAERedirectCallback(function () use (&$callbackExecuted) {
                 $callbackExecuted = true;
             });
             $tokenProvider = new PhpLeagueAccessTokenProvider($context);

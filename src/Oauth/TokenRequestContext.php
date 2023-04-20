@@ -93,7 +93,7 @@ abstract class TokenRequestContext
     }
 
     /**
-     * @param callable|null $callback
+     * @param null|callable(string $claims): Promise $callback
      */
     public function setCAERedirectCallback(?callable $callback = null): void
     {

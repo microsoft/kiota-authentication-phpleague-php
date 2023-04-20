@@ -31,7 +31,7 @@ use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
 class PhpLeagueAccessTokenProvider implements AccessTokenProvider
 {
 
-    public const CP1_CLAIM = ['access_token' => ['xms_cc' => ['values' => ['cp1']]]];
+    public const CP1_CLAIM = '{"access_token":{"xms_cc":{"values":["cp1"]}}}';
     /**
      * @var TokenRequestContext {@link TokenRequestContext}
      */
@@ -125,12 +125,18 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
 
     /**
      * Refreshes token
-     * @param array $params
+     * @param array<string, string> $params
      * @return AccessToken
      * @throws IdentityProviderException
      */
     private function refreshToken(array $params = []): AccessToken
     {
+        if ($params['claims'] ?? false) {
+            $params = $this->mergeClaims(
+                $this->tokenRequestContext->getRefreshTokenParams($this->cachedToken->getRefreshToken()),
+                $params['claims']
+            );
+        }
         $params = array_merge(
             $this->tokenRequestContext->getRefreshTokenParams($this->cachedToken->getRefreshToken()),
             $params
@@ -140,18 +146,14 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     }
 
     /**
-     * @param array $params
+     * @param array<string, string> $params
      * @return AccessToken
      * @throws IdentityProviderException
      */
     private function requestNewToken(array $params): AccessToken
     {
         if ($this->tokenRequestContext->isCAEEnabled()) {
-            $params = array_merge_recursive(
-                $params,
-                ['claims' => self::CP1_CLAIM]
-            );
-            $params['claims'] = json_encode($params['claims']);
+            $params = $this->mergeClaims($params, self::CP1_CLAIM);
         }
         // @phpstan-ignore-next-line
         return $this->oauthProvider->getAccessToken($this->tokenRequestContext->getGrantType(), $params);
@@ -162,7 +164,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * If that fails, call the redirect callback if it's available. Otherwise, fail with an exception containing the
      * claims
      *
-     * @param array $initialParams
+     * @param array<string, string> $initialParams
      * @param string $claims
      * @return AccessToken
      * @throws ContinuousAccessEvaluationException
@@ -210,6 +212,23 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
             );
         }
         $this->tokenRequestContext = $context;
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param string $claims
+     * @return array<string, string>
+     */
+    private function mergeClaims(array $params, string $claims): array
+    {
+        if ($params['claims'] ?? false) {
+            $claims = json_decode($params['claims'], true);
+            $claims = array_merge_recursive($claims, json_decode($claims));
+            $params['claims'] = json_encode($claims);
+            return $params;
+        }
+        $params['claims'] = $claims;
+        return $params;
     }
 
 }
