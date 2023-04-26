@@ -108,7 +108,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
                 }
             }
 
-            if (!$this->tokenRequestContext->getCacheKey()) {
+            if ($this->tokenRequestContext->getCacheKey()) {
                 $cachedToken = $this->accessTokenCache->getAccessToken($this->tokenRequestContext->getCacheKey());
                 if ($cachedToken) {
                     if ($cachedToken->getExpires() && !$cachedToken->hasExpired()) {
