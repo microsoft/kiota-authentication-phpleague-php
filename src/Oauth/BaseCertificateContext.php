@@ -12,7 +12,14 @@ namespace Microsoft\Kiota\Authentication\Oauth;
 use Firebase\JWT\JWT;
 use Ramsey\Uuid\Uuid;
 
-class BaseCertificateContext extends TokenRequestContext
+/**
+ * Class BaseCertificateContext
+ * @package Microsoft\Kiota\Authentication\Oauth
+ * @copyright 2023 Microsoft Corporation
+ * @license https://opensource.org/licenses/MIT MIT License
+ * @link https://learn.microsoft.com/en-us/openapi/kiota/
+ */
+class BaseCertificateContext
 {
     /**
      * @var string Tenant Id
@@ -67,7 +74,7 @@ class BaseCertificateContext extends TokenRequestContext
     }
 
     /**
-     * @inheritDoc
+     * @return array<string, string>
      */
     public function getParams(): array
     {
@@ -79,7 +86,8 @@ class BaseCertificateContext extends TokenRequestContext
     }
 
     /**
-     * @inheritDoc
+     * @param string $refreshToken
+     * @return array<string, string>
      */
     public function getRefreshTokenParams(string $refreshToken): array
     {
@@ -93,19 +101,19 @@ class BaseCertificateContext extends TokenRequestContext
     }
 
     /**
-     * @inheritDoc
-     */
-    public function getGrantType(): string
-    {
-        return '';
-    }
-
-    /**
-     * @inheritDoc
+     * @return string
      */
     public function getTenantId(): string
     {
         return $this->tenantId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getClientId(): string
+    {
+        return $this->clientId;
     }
 
     /**
@@ -127,10 +135,5 @@ class BaseCertificateContext extends TokenRequestContext
         return JWT::encode($claims, $this->privateKey, 'RS256', null, [
             'x5t' => JWT::urlsafeB64Encode( hex2bin($this->certificateFingerprint))
         ]);
-    }
-
-    public function getIdentity(): string
-    {
-        return $this->clientId;
     }
 }

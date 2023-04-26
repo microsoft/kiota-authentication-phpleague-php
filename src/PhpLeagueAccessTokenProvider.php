@@ -100,23 +100,29 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
             $params = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
             if ($additionalAuthenticationContext['claims'] ?? false) {
                 $claims = base64_decode($additionalAuthenticationContext['claims']);
-                $token = $this->tryCAETokenRefresh($params, $claims);
-                $this->accessTokenCache->persistAccessToken($token);
-                return new FulfilledPromise($token->getToken());
-            }
-            $cachedToken = $this->accessTokenCache->getAccessToken();
-            if ($cachedToken) {
-                if ($cachedToken->getExpires() && !$cachedToken->hasExpired()) {
-                    return new FulfilledPromise($cachedToken->getToken());
+                if ($this->tokenRequestContext->getCacheKey()) {
+                    $cachedToken = $this->accessTokenCache->getAccessToken($this->tokenRequestContext->getCacheKey());
+                    $token = $this->tryCAETokenRefresh($cachedToken,$params, $claims);
+                    $this->cacheToken($token);
+                    return new FulfilledPromise($token->getToken());
                 }
-                if ($cachedToken->getRefreshToken()) {
-                    $cachedToken = $this->refreshToken();
-                    $this->accessTokenCache->persistAccessToken($cachedToken);
-                    return new FulfilledPromise($cachedToken->getToken());
+            }
+
+            if (!$this->tokenRequestContext->getCacheKey()) {
+                $cachedToken = $this->accessTokenCache->getAccessToken($this->tokenRequestContext->getCacheKey());
+                if ($cachedToken) {
+                    if ($cachedToken->getExpires() && !$cachedToken->hasExpired()) {
+                        return new FulfilledPromise($cachedToken->getToken());
+                    }
+                    if ($cachedToken->getRefreshToken()) {
+                        $refreshedToken = $this->refreshToken($cachedToken->getRefreshToken());
+                        $this->cacheToken($refreshedToken);
+                        return new FulfilledPromise($refreshedToken->getToken());
+                    }
                 }
             }
             $token = $this->requestNewToken($params);
-            $this->accessTokenCache->persistAccessToken($token);
+            $this->cacheToken($token);
             return new FulfilledPromise($token->getToken());
         } catch (\Exception $ex) {
             return new RejectedPromise($ex);
@@ -142,21 +148,34 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     }
 
     /**
+     * Attempts to cache the access token if the TokenRequestContext provides a cache key
+     * @param AccessToken $token
+     */
+    private function cacheToken(AccessToken $token): void
+    {
+        $this->tokenRequestContext->setCacheKey($token);
+        if ($this->tokenRequestContext->getCacheKey()) {
+            $this->accessTokenCache->persistAccessToken($this->tokenRequestContext->getCacheKey(), $token);
+        }
+    }
+
+    /**
      * Refreshes token
+     * @param string $refreshToken
      * @param array<string, string> $params
      * @return AccessToken
      * @throws IdentityProviderException
      */
-    private function refreshToken(array $params = []): AccessToken
+    private function refreshToken(string $refreshToken, array $params = []): AccessToken
     {
         if ($params['claims'] ?? false) {
             $params = $this->mergeClaims(
-                $this->tokenRequestContext->getRefreshTokenParams($this->cachedToken->getRefreshToken()),
+                $this->tokenRequestContext->getRefreshTokenParams($refreshToken),
                 $params['claims']
             );
         }
         $params = array_merge(
-            $this->tokenRequestContext->getRefreshTokenParams($this->accessTokenCache->getAccessToken()->getRefreshToken()),
+            $this->tokenRequestContext->getRefreshTokenParams($refreshToken),
             $params
         );
         // @phpstan-ignore-next-line
@@ -182,17 +201,18 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * If that fails, call the redirect callback if it's available. Otherwise, fail with an exception containing the
      * claims
      *
+     * @param AccessToken $cachedToken
      * @param array<string, string> $initialParams
      * @param string $claims
      * @return AccessToken
      * @throws ContinuousAccessEvaluationException
      * @throws IdentityProviderException
      */
-    private function tryCAETokenRefresh(array $initialParams, string $claims): AccessToken
+    private function tryCAETokenRefresh(AccessToken $cachedToken, array $initialParams, string $claims): AccessToken
     {
-        if ($this->accessTokenCache->getAccessToken() && $this->accessTokenCache->getAccessToken()->getRefreshToken()) {
+        if ($cachedToken->getRefreshToken()) {
             try {
-                return $this->refreshToken(['claims' => $claims]);
+                return $this->refreshToken($cachedToken->getRefreshToken(), ['claims' => $claims]);
             } catch (\Exception $ex) {
                 $this->handleFailedCAETokenRefresh($claims);
                 return $this->requestNewToken($initialParams);

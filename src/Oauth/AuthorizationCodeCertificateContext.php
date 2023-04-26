@@ -18,8 +18,10 @@ namespace Microsoft\Kiota\Authentication\Oauth;
  * @license https://opensource.org/licenses/MIT MIT License
  * @link https://developer.microsoft.com/graph
  */
-class AuthorizationCodeCertificateContext extends BaseCertificateContext
+class AuthorizationCodeCertificateContext extends BaseCertificateContext implements TokenRequestContext
 {
+    use DelegatedPermissionTrait;
+
     private string $authCode;
     private string $redirectUri;
     private array $additionalParams;
