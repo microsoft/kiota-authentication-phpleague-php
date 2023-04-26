@@ -84,7 +84,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];
         try {
             $params = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
-            if (($additionalAuthenticationContext['claims'] ?? false)) {
+            if ($additionalAuthenticationContext['claims'] ?? false) {
                 $claims = base64_decode($additionalAuthenticationContext['claims']);
                 $this->cachedToken = $this->tryCAETokenRefresh($params, $claims);
                 return new FulfilledPromise($this->cachedToken->getToken());
