@@ -18,8 +18,10 @@ namespace Microsoft\Kiota\Authentication\Oauth;
  * @license https://opensource.org/licenses/MIT MIT License
  * @link https://developer.microsoft.com/graph
  */
-class ClientCredentialCertificateContext extends BaseCertificateContext
+class ClientCredentialCertificateContext extends BaseCertificateContext implements TokenRequestContext
 {
+    use ApplicationPermissionTrait;
+
     private array $additionalParams;
 
     /**

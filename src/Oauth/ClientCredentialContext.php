@@ -18,8 +18,10 @@ namespace Microsoft\Kiota\Authentication\Oauth;
  * @license https://opensource.org/licenses/MIT MIT License
  * @link https://developer.microsoft.com/graph
  */
-class ClientCredentialContext extends BaseSecretContext
+class ClientCredentialContext extends BaseSecretContext implements TokenRequestContext
 {
+    use ApplicationPermissionTrait;
+
     /**
      * @var array<string, string> Key-value pairs of additional OAuth 2.0 parameters
      */

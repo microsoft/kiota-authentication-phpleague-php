@@ -18,7 +18,7 @@ namespace Microsoft\Kiota\Authentication\Oauth;
  * @license https://opensource.org/licenses/MIT MIT License
  * @link https://developer.microsoft.com/graph
  */
-class BaseSecretContext implements TokenRequestContext
+class BaseSecretContext
 {
     /**
      * @var string Tenant Id
@@ -49,7 +49,7 @@ class BaseSecretContext implements TokenRequestContext
     }
 
     /**
-     * @inheritDoc
+     * @return array<string, string>
      */
     public function getParams(): array
     {
@@ -59,6 +59,10 @@ class BaseSecretContext implements TokenRequestContext
         ];
     }
 
+    /**
+     * @param string $refreshToken
+     * @return array<string, string>
+     */
     public function getRefreshTokenParams(string $refreshToken): array
     {
         return [
@@ -69,13 +73,19 @@ class BaseSecretContext implements TokenRequestContext
         ];
     }
 
-    public function getGrantType(): string
-    {
-        return '';
-    }
-
+    /**
+     * @return string
+     */
     public function getTenantId(): string
     {
         return $this->tenantId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getClientId(): string
+    {
+        return $this->clientId;
     }
 }
