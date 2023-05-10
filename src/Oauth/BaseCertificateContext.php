@@ -53,37 +53,37 @@ class BaseCertificateContext
                                 string $privateKeyPassphrase = '')
     {
         if (!$tenantId || !$clientId || !$certificatePath || !$privateKeyPath) {
-            throw new InvalidArgumentException("TenantId, clientId, certificatePath an privateKeyPath cannot be empty");
+            throw new InvalidArgumentException('$tenantId, $clientId, $certificatePath or $privateKeyPath cannot be empty.');
         }
         $this->tenantId = $tenantId;
         $this->clientId = $clientId;
         $certificateContents = file_get_contents($certificatePath);
         if (!$certificateContents) {
-            throw new InvalidArgumentException("Unable to read file contents at $certificatePath");
+            throw new InvalidArgumentException("Unable to read certificate file content at $certificatePath.");
         }
         $certificate = openssl_x509_read($certificateContents);
         if (!$certificate) {
-            throw new InvalidArgumentException("Could not read X.509 certificate at $certificatePath");
+            throw new InvalidArgumentException("Could not read X.509 certificate at $certificatePath.");
         }
         $fingerPrint = openssl_x509_fingerprint($certificate);
         if (!$fingerPrint) {
             throw new InvalidArgumentException(
-                "Failed to calculate the fingerprint of the X.509 certificate at $certificatePath"
+                "Failed to calculate the fingerprint of the X.509 certificate at $certificatePath."
             );
         }
         $this->certificateFingerprint = $fingerPrint;
         $privateKeyContents = file_get_contents($privateKeyPath);
         if (!$privateKeyContents) {
-            throw new InvalidArgumentException("Unable to read file contents at $privateKeyPath");
+            throw new InvalidArgumentException("Unable to read private key file contents at $privateKeyPath.");
         }
         $privateKey = openssl_pkey_get_private($privateKeyContents, $privateKeyPassphrase);
         if (!$privateKey) {
             throw new InvalidArgumentException(
-                "Failed to read the private key at $privateKeyPath using passphrase $privateKeyPassphrase"
+                "Failed to read the private key at $privateKeyPath using passphrase $privateKeyPassphrase."
             );
         }
         if (!openssl_x509_check_private_key($certificate, $privateKey)) {
-            throw new InvalidArgumentException("Private Key at {$privateKeyPath} does not correspond to the certificate at {$certificatePath}");
+            throw new InvalidArgumentException("Private Key at {$privateKeyPath} does not correspond to the certificate at {$certificatePath}.");
         }
         $this->clientAssertion = $this->getClientAssertion($privateKey);
     }

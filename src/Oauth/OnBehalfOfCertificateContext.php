@@ -45,7 +45,7 @@ class OnBehalfOfCertificateContext extends BaseCertificateContext implements Tok
     public function __construct(string $tenantId, string $clientId, string $assertion, string $certificatePath, string $privateKeyPath, string $privateKeyPassphrase = '', array $additionalParams = [])
     {
         if (!$assertion) {
-            throw new InvalidArgumentException("Assertion cannot be empty");
+            throw new InvalidArgumentException("Assertion cannot be empty.");
         }
         $this->assertion = $assertion;
         $this->additionalParams = $additionalParams;

@@ -48,7 +48,7 @@ class AuthorizationCodeContext extends BaseSecretContext implements TokenRequest
     public function __construct(string $tenantId, string $clientId, string $clientSecret, string $authCode, string $redirectUri, array $additionalParams = [])
     {
         if (!$authCode || !$redirectUri) {
-            throw new InvalidArgumentException("Auth code and redirectUri cannot be empty");
+            throw new InvalidArgumentException('$authCode or $redirectUri cannot be empty.');
         }
         $this->authCode = $authCode;
         $this->redirectUri = $redirectUri;
