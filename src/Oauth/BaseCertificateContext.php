@@ -53,7 +53,9 @@ class BaseCertificateContext
                                 string $privateKeyPassphrase = '')
     {
         if (!$tenantId || !$clientId || !$certificatePath || !$privateKeyPath) {
-            throw new InvalidArgumentException('$tenantId, $clientId, $certificatePath or $privateKeyPath cannot be empty.');
+            throw new InvalidArgumentException(
+                '$tenantId, $clientId, $certificatePath or $privateKeyPath cannot be empty.'
+            );
         }
         $this->tenantId = $tenantId;
         $this->clientId = $clientId;
@@ -83,7 +85,9 @@ class BaseCertificateContext
             );
         }
         if (!openssl_x509_check_private_key($certificate, $privateKey)) {
-            throw new InvalidArgumentException("Private Key at {$privateKeyPath} does not correspond to the certificate at {$certificatePath}.");
+            throw new InvalidArgumentException(
+                "Private Key at $privateKeyPath does not correspond to the certificate at $certificatePath."
+            );
         }
         $this->clientAssertion = $this->getClientAssertion($privateKey);
     }
@@ -151,7 +155,7 @@ class BaseCertificateContext
         ];
         $hexBinInput = hex2bin($this->certificateFingerprint);
         return JWT::encode($claims, $privateKey, 'RS256', null, [
-            'x5t' => JWT::urlsafeB64Encode( $hexBinInput ?: '')
+            'x5t' => JWT::urlsafeB64Encode($hexBinInput ?: '')
         ]);
     }
 }

@@ -104,7 +104,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
                 if ($this->tokenRequestContext->getCacheKey()) {
                     $cachedToken = $this->accessTokenCache->getAccessToken($this->tokenRequestContext->getCacheKey());
                     if ($cachedToken) {
-                        $token = $this->tryCAETokenRefresh($cachedToken,$params, $claims);
+                        $token = $this->tryCAETokenRefresh($cachedToken, $params, $claims);
                         $this->cacheToken($token);
                         return new FulfilledPromise($token->getToken());
                     }
