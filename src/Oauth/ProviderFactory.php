@@ -11,6 +11,7 @@ class ProviderFactory
      * Initialises a PHP League provider for the Microsoft Identity platform
      * @param TokenRequestContext $tokenRequestContext
      * @param array<string, object> $collaborators
+     * @return GenericProvider
      */
     public static function create(TokenRequestContext $tokenRequestContext, array $collaborators = []): GenericProvider
     {

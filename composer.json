@@ -16,12 +16,12 @@
         "microsoft/kiota-abstractions": "^0.6.0",
         "firebase/php-jwt": "^v6.0.0",
         "ramsey/uuid": "^4.2.3",
-        "ext-openssl": "*"
+        "ext-openssl": "*",
+        "ext-json": "*"
     },
 	"require-dev": {
 		"phpunit/phpunit": "^9.5.13",
-        "phpstan/phpstan": "^1.4.6",
-        "ext-json": "*"
+        "phpstan/phpstan": "^1.4.6"
     },
     "autoload": {
         "psr-4": {

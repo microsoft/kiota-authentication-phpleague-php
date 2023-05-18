@@ -29,6 +29,9 @@ class OnBehalfOfGrant extends AbstractGrant
         return 'urn:ietf:params:Oauth:grant-type:jwt-bearer';
     }
 
+    /**
+     * @return string[]
+     */
     protected function getRequiredRequestParameters(): array
     {
         return [

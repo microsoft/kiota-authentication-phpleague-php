@@ -8,6 +8,8 @@
 
 namespace Microsoft\Kiota\Authentication\Oauth;
 
+use InvalidArgumentException;
+
 /**
  * Class AuthorizationCodeContext
  *
@@ -18,8 +20,10 @@ namespace Microsoft\Kiota\Authentication\Oauth;
  * @license https://opensource.org/licenses/MIT MIT License
  * @link https://developer.microsoft.com/graph
  */
-class AuthorizationCodeContext extends BaseSecretContext
+class AuthorizationCodeContext extends BaseSecretContext implements TokenRequestContext
 {
+    use DelegatedPermissionTrait;
+
     /**
      * @var string Code from the authorization step
      */
@@ -29,7 +33,7 @@ class AuthorizationCodeContext extends BaseSecretContext
      */
     private string $redirectUri;
     /**
-     * @var array Extra params to add to the request
+     * @var array<string, string> Extra params to add to the request
      */
     private array $additionalParams;
 
@@ -39,12 +43,12 @@ class AuthorizationCodeContext extends BaseSecretContext
      * @param string $clientSecret
      * @param string $authCode
      * @param string $redirectUri
-     * @param array $additionalParams
+     * @param array<string, string> $additionalParams
      */
     public function __construct(string $tenantId, string $clientId, string $clientSecret, string $authCode, string $redirectUri, array $additionalParams = [])
     {
         if (!$authCode || !$redirectUri) {
-            throw new \InvalidArgumentException("Auth code and redirectUri cannot be empty");
+            throw new InvalidArgumentException('$authCode or $redirectUri cannot be empty.');
         }
         $this->authCode = $authCode;
         $this->redirectUri = $redirectUri;
