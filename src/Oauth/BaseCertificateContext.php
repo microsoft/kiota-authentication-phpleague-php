@@ -11,6 +11,7 @@ namespace Microsoft\Kiota\Authentication\Oauth;
 
 use Firebase\JWT\JWT;
 use Ramsey\Uuid\Uuid;
+use InvalidArgumentException;
 
 /**
  * Class BaseCertificateContext
@@ -30,10 +31,8 @@ class BaseCertificateContext
      */
     private string $clientId;
     /**
-     * @var mixed Byte stream of the certificate
+     * @var string
      */
-    private $privateKey;
-
     private string $certificateFingerprint;
     /**
      * @var string JWT token signed with the private key
@@ -54,23 +53,43 @@ class BaseCertificateContext
                                 string $privateKeyPassphrase = '')
     {
         if (!$tenantId || !$clientId || !$certificatePath || !$privateKeyPath) {
-            throw new \InvalidArgumentException("TenantId, clientId, certificatePath an privateKeyPath cannot be empty");
+            throw new InvalidArgumentException(
+                '$tenantId, $clientId, $certificatePath or $privateKeyPath cannot be empty.'
+            );
         }
         $this->tenantId = $tenantId;
         $this->clientId = $clientId;
-        $certificate = openssl_x509_read(file_get_contents($certificatePath));
+        $certificateContents = file_get_contents($certificatePath);
+        if (!$certificateContents) {
+            throw new InvalidArgumentException("Unable to read certificate file content at $certificatePath.");
+        }
+        $certificate = openssl_x509_read($certificateContents);
         if (!$certificate) {
-            throw new \InvalidArgumentException("Could not read X.509 certificate at {$certificatePath}");
+            throw new InvalidArgumentException("Could not read X.509 certificate at $certificatePath.");
         }
-        $this->certificateFingerprint = openssl_x509_fingerprint($certificate);
-        $this->privateKey = openssl_pkey_get_private(file_get_contents($privateKeyPath), $privateKeyPassphrase);
-        if (!$this->privateKey) {
-            throw new \InvalidArgumentException("Unable to read private key at {$privateKeyPath} using passphrase {$privateKeyPassphrase}");
+        $fingerPrint = openssl_x509_fingerprint($certificate);
+        if (!$fingerPrint) {
+            throw new InvalidArgumentException(
+                "Failed to calculate the fingerprint of the X.509 certificate at $certificatePath."
+            );
         }
-        if (!openssl_x509_check_private_key($certificate, $this->privateKey)) {
-            throw new \InvalidArgumentException("Private Key at {$privateKeyPath} does not correspond to the certificate at {$certificatePath}");
+        $this->certificateFingerprint = $fingerPrint;
+        $privateKeyContents = file_get_contents($privateKeyPath);
+        if (!$privateKeyContents) {
+            throw new InvalidArgumentException("Unable to read private key file contents at $privateKeyPath.");
         }
-        $this->clientAssertion = $this->getClientAssertion();
+        $privateKey = openssl_pkey_get_private($privateKeyContents, $privateKeyPassphrase);
+        if (!$privateKey) {
+            throw new InvalidArgumentException(
+                "Failed to read the private key at $privateKeyPath using passphrase $privateKeyPassphrase."
+            );
+        }
+        if (!openssl_x509_check_private_key($certificate, $privateKey)) {
+            throw new InvalidArgumentException(
+                "Private Key at $privateKeyPath does not correspond to the certificate at $certificatePath."
+            );
+        }
+        $this->clientAssertion = $this->getClientAssertion($privateKey);
     }
 
     /**
@@ -118,9 +137,11 @@ class BaseCertificateContext
 
     /**
      * Generates JSON Web Token ref (https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-certificate-credentials)
+     * @param $privateKey
      * @return string
+     * @phpstan-ignore-next-line
      */
-    private function getClientAssertion(): string
+    private function getClientAssertion($privateKey): string
     {
         $currentTimeSecs = time();
         $claims = [
@@ -132,8 +153,9 @@ class BaseCertificateContext
             'nbf' => $currentTimeSecs,
             'exp' => $currentTimeSecs + (5 * 60), // add 5 minutes to iat
         ];
-        return JWT::encode($claims, $this->privateKey, 'RS256', null, [
-            'x5t' => JWT::urlsafeB64Encode( hex2bin($this->certificateFingerprint))
+        $hexBinInput = hex2bin($this->certificateFingerprint);
+        return JWT::encode($claims, $privateKey, 'RS256', null, [
+            'x5t' => JWT::urlsafeB64Encode($hexBinInput ?: '')
         ]);
     }
 }

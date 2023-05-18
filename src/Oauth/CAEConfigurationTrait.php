@@ -20,8 +20,8 @@ trait CAEConfigurationTrait
 
     /**
      * Whether this client should add claims to inform API that it can handle claims challenges.
-     * Disabled by default since different Identity Providers can be used with this lib. Not only Azure which understands
-     * the cp1 claim
+     * Disabled by default since different Identity Providers can be used with this lib.
+     * Not only Azure which understands the cp1 claim
      * https://learn.microsoft.com/en-us/azure/active-directory/develop/claims-challenge?tabs=dotnet
      * @var bool
      */

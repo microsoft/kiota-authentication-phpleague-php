@@ -189,6 +189,25 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
         $this->assertNull($this->defaultTokenProvider->getAuthorizationTokenAsync('http://example.com')->wait());
     }
 
+    public function testCAEMergingClaims(): void
+    {
+        $additionalClaims = ['claims' => '{"access_token":{"acrs":{"essential":true,"value":"c25"}}}'];
+        $oauthContext = new ClientCredentialContext('tenant', 'client', 'secret', $additionalClaims);
+        $oauthContext->setCAEEnabled(true);
+        $tokenProvider = new PhpLeagueAccessTokenProvider($oauthContext);
+        $mockResponses = [
+            function (Request $request) {
+                parse_str($request->getBody()->getContents(), $requestBodyMap);
+                $this->assertArrayHasKey('claims', $requestBodyMap);
+                $expected = '{"access_token":{"acrs":{"essential":true,"value":"c25"},"xms_cc":{"values":["cp1"]}}}';
+                $this->assertEquals($expected, $requestBodyMap['claims']);
+                return new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 1]));
+            }
+        ];
+        $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
+        $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com/users')->wait();
+    }
+
     public function testCAEEnabledAddsCp1ClaimToTokenRequest(): void
     {
         $oauthContexts = $this->getOauthContexts();
@@ -307,6 +326,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
             $callbackExecuted = false;
             $context->setCAERedirectCallback(function () use (&$callbackExecuted) {
                 $callbackExecuted = true;
+                return new FulfilledPromise(null);
             });
             $tokenProvider = new PhpLeagueAccessTokenProvider($context);
             $mockResponses = [
@@ -327,6 +347,41 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
                 $this->assertInstanceOf(ContinuousAccessEvaluationException::class, $ex);
                 $this->assertEquals(base64_decode($claims), $ex->getClaims());
             }
+        }
+    }
+
+    public function testTryCAERefreshWithoutRefreshTokenFails(): void
+    {
+        $oauthContexts = $this->getOauthContexts();
+        foreach ($oauthContexts as $context) {
+            $context->setCAEEnabled(true);
+            $tokenProvider = new PhpLeagueAccessTokenProvider($context);
+            $mockResponses = [
+                function (Request $request) {
+                    parse_str($request->getBody()->getContents(), $requestBodyMap);
+                    $this->assertArrayHasKey('claims', $requestBodyMap);
+                    $this->assertEquals(PhpLeagueAccessTokenProvider::CP1_CLAIM, $requestBodyMap['claims']);
+                    return new Response(200, [], json_encode(['access_token' => $this->testJWT, 'expires_in' => 5]));
+                },
+                function (Request $refreshTokenRequest) {
+                    parse_str($refreshTokenRequest->getBody()->getContents(), $requestBodyMap);
+                    $this->assertArrayHasKey('refresh_token', $requestBodyMap);
+                    $this->assertEquals('refresh', $requestBodyMap['refresh_token']);
+                    $this->assertArrayHasKey('claims', $requestBodyMap);
+                    $this->assertEquals(
+                        'eyJhY2Nlc3NfdG9rZW4iOnsiYWNycyI6eyJlc3NlbnRpYWwiOnRydWUsInZhbHVlIjoiY3AxIn19fQ==',
+                        base64_encode($requestBodyMap['claims'])
+                    );
+                    return new Response(200, [], json_encode(['access_token' => 'abc', 'refresh_token' => 'refresh', 'expires_in' => 5]));
+                }
+            ];
+            $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
+            $this->assertEquals($this->testJWT, $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com/users')->wait());
+            // while cached token exists, make a claims request
+            $this->expectException(ContinuousAccessEvaluationException::class);
+            $this->assertEquals('abc', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com/users', [
+                'claims' => 'eyJhY2Nlc3NfdG9rZW4iOnsiYWNycyI6eyJlc3NlbnRpYWwiOnRydWUsInZhbHVlIjoiY3AxIn19fQ=='
+            ])->wait());
         }
     }
 

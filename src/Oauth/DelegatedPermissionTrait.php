@@ -44,8 +44,10 @@ trait DelegatedPermissionTrait
             $tokenParts = explode('.', $accessToken->getToken());
             if (count($tokenParts) == 3) {
                 $payload = json_decode(base64_decode($tokenParts[1]), true);
-                $subject = $payload['sub'] ?? false;
-                $this->cacheKey = ($subject) ? "{$this->getTenantId()}-{$this->getClientId()}-{$subject}" : null;
+                if (is_array($payload) && array_key_exists('sub', $payload)) {
+                    $subject = $payload['sub'];
+                    $this->cacheKey = ($subject) ? "{$this->getTenantId()}-{$this->getClientId()}-{$subject}" : null;
+                }
             }
         }
     }
