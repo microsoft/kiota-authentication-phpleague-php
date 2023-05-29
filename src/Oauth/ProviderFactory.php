@@ -18,10 +18,11 @@ class ProviderFactory
      * https://graph.microsoft.com
      * @return GenericProvider
      */
-    public static function create(TokenRequestContext $tokenRequestContext,
-                                  array $collaborators = [],
-                                  string $tokenServiceBaseUrl = 'https://login.microsoftonline.com',
-                                  string $userInfoServiceBaseUrl = 'https://graph.microsoft.com'
+    public static function create(
+        TokenRequestContext $tokenRequestContext,
+        array $collaborators = [],
+        string $tokenServiceBaseUrl = 'https://login.microsoftonline.com',
+        string $userInfoServiceBaseUrl = 'https://graph.microsoft.com'
     ): GenericProvider
     {
         $grantFactory = new GrantFactory();
