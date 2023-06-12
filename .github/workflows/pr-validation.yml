@@ -15,7 +15,7 @@ jobs:
         php-versions: ['7.4', '8.0', '8.1', '8.2']
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
       - name: Setup PHP and Xdebug for Code Coverage report
         uses: shivammathur/setup-php@v2
         with:
