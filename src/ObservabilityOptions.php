@@ -2,7 +2,9 @@
 
 namespace Microsoft\Kiota\Authentication;
 
-class ObservabilityOptions
+use Microsoft\Kiota\Abstractions\RequestOption;
+
+class ObservabilityOptions implements RequestOption
 {
     public static function getTracerInstrumentationName(): string
     {
