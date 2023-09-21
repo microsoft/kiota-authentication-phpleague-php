@@ -23,7 +23,6 @@ use Microsoft\Kiota\Authentication\Oauth\ProviderFactory;
 use Microsoft\Kiota\Authentication\Cache\AccessTokenCache;
 use Microsoft\Kiota\Authentication\Cache\InMemoryAccessTokenCache;
 use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
-use OpenTelemetry\API\Common\Instrumentation\Globals;
 use OpenTelemetry\API\Trace\SpanInterface;
 use OpenTelemetry\API\Trace\StatusCode;
 use OpenTelemetry\API\Trace\TracerInterface;
@@ -55,6 +54,8 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     /** @var TracerInterface $tracer */
     private TracerInterface $tracer;
 
+    /** @var ObservabilityOptions $observabilityOptions */
+    private ObservabilityOptions $observabilityOptions;
     /**
      * @var AbstractProvider OAuth 2.0 provider from PHP League library
      */
@@ -72,33 +73,37 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @param array<string> $allowedHosts
      * @param AbstractProvider|null $oauthProvider when null, defaults to a Microsoft Identity Authentication Provider
      * @param AccessTokenCache|null $accessTokenCache defaults to an in-memory cache
+     * @param ObservabilityOptions|null $observabilityOptions
      */
     public function __construct(
         TokenRequestContext $tokenRequestContext,
         array $scopes = [],
         array $allowedHosts = [],
         ?AbstractProvider $oauthProvider = null,
-        ?AccessTokenCache $accessTokenCache = null
+        ?AccessTokenCache $accessTokenCache = null,
+        ?ObservabilityOptions $observabilityOptions = null
     )
     {
         $this->tokenRequestContext = $tokenRequestContext;
         $this->scopes = $scopes;
-        $this->tracer = Globals::tracerProvider()->getTracer(ObservabilityOptions::getTracerInstrumentationName(),
-            Constants::VERSION);
         $this->allowedHostsValidator = new AllowedHostsValidator();
         $this->allowedHostsValidator->setAllowedHosts($allowedHosts);
         $this->oauthProvider = $oauthProvider ?? ProviderFactory::create($tokenRequestContext);
         $this->accessTokenCache = $accessTokenCache === null ? new InMemoryAccessTokenCache() : $accessTokenCache;
+        $this->observabilityOptions = $observabilityOptions ?? new ObservabilityOptions();
+        $this->tracer = $this->observabilityOptions::getTracer();
 
     }
 
     private const TOKEN_GET_RESULT_KEY = "get_authorization_token_success";
     private const TOKEN_FROM_CACHE_KEY = "get_authorization_from_cache";
-    private const CONTAINS_CLAIMS_KEY = "contains_claims";
+    private const CONTAINS_CLAIMS_KEY = "com.microsoft.kiota.authentication.additional_claims_provided";
     private const TOKEN_CACHE_EVENT = 'token_cached';
     private const REFRESH_TOKEN_EVENT = 'refresh_token';
     private const TOKEN_REFRESHED = 'token_refreshed';
     private const REQUEST_NEW_TOKEN_EVENT = 'new_token_requested';
+    private const SCOPES_KEY = 'com.microsoft.kiota.authentication.scopes';
+    private const URL_VALID_KEY = 'com.microsoft.kiota.authentication.is_url_valid';
 
     /**
      * @inheritDoc
@@ -113,10 +118,12 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         $host = $parsedUrl["host"] ?? null;
         try {
             if ($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url)) {
+                $span->setAttribute(self::URL_VALID_KEY, false);
                 return new FulfilledPromise(null);
             }
-
+            $span->setAttribute(self::URL_VALID_KEY, true);
             $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];
+            $span->setAttribute(self::SCOPES_KEY, implode(',', $this->scopes));
             $params       = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
             if ($additionalAuthenticationContext['claims'] ?? false) {
                 $span->setAttribute(self::CONTAINS_CLAIMS_KEY, true);
