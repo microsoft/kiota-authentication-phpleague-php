@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-versions: ['8.0', '8.1', '8.2']
+        php-versions: ['7.4', '8.0', '8.1', '8.2']
     steps:
       - name: Checkout
         uses: actions/checkout@v4.0.0
@@ -21,6 +21,9 @@ jobs:
         with:
           php-version: ${{ matrix.php-versions }}
           coverage: xdebug
+        env:
+          phpts: ts
+          debug: true
       - name: Install dependencies
         run: composer install
       - name: Run static analysis
