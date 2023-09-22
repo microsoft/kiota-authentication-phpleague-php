@@ -26,7 +26,7 @@ jobs:
       - name: Run static analysis
         run: ./vendor/bin/phpstan
       - name: Run tests
-        run:  OTEL_PHP_AUTOLOAD_ENABLED=true OTEL_TRACES_EXPORTER=console OTEL_METRICS_EXPORTER=none OTEL_LOGS_EXPORTER=console ./vendor/bin/phpunit --coverage-clover=coverage.xml
+        run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
       - name: Fix code coverage paths
         run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
       - name: SonarCloud Scan
