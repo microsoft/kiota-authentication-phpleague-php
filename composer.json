@@ -17,7 +17,10 @@
         "firebase/php-jwt": "^v6.0.0",
         "ramsey/uuid": "^4.2.3",
         "ext-openssl": "*",
-        "open-telemetry/sdk": "^0.0.17",
+        "open-telemetry/sdk": "^1.0.0RC1",
+        "open-telemetry/api": "@beta",
+        "open-telemetry/context": "@beta",
+        "open-telemetry/sem-conv": "@beta",
         "ext-json": "*"
     },
 	"require-dev": {
