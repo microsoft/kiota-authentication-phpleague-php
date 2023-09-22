@@ -29,7 +29,7 @@ jobs:
       - name: Run static analysis
         run: ./vendor/bin/phpstan
       - name: Run tests
-        run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
+        run: ./vendor/bin/phpunit
       - name: Fix code coverage paths
         run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
       - name: SonarCloud Scan
