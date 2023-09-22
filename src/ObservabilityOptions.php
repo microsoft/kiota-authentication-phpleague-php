@@ -2,7 +2,7 @@
 
 namespace Microsoft\Kiota\Authentication;
 
-use OpenTelemetry\API\Globals;
+use OpenTelemetry\API\Common\Instrumentation\Globals;
 use OpenTelemetry\API\Trace\TracerInterface;
 
 class ObservabilityOptions
