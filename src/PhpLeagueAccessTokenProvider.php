@@ -135,6 +135,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
                         $this->cacheToken($token, $span);
                         $tokenFromCache = $token->getToken();
                         $span->setAttribute(self::TOKEN_FROM_CACHE_KEY, true);
+                        $span->setAttribute(self::TOKEN_GET_RESULT_KEY, true);
                         return new FulfilledPromise($tokenFromCache);
                     }
                 }
@@ -145,11 +146,13 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
                 if ($cachedToken) {
                     if ($cachedToken->getExpires() && !$cachedToken->hasExpired()) {
                         $span->setAttribute(self::TOKEN_FROM_CACHE_KEY, true);
+                        $span->setAttribute(self::TOKEN_GET_RESULT_KEY, true);
                         return new FulfilledPromise($cachedToken->getToken());
                     }
                     if ($cachedToken->getRefreshToken()) {
                         $refreshedToken = $this->refreshToken($cachedToken->getRefreshToken(), [], $span);
                         $this->cacheToken($refreshedToken, $span);
+                        $span->setAttribute(self::TOKEN_GET_RESULT_KEY, true);
                         return new FulfilledPromise($refreshedToken->getToken());
                     }
                 }
