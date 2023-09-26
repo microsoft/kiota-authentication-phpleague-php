@@ -20,7 +20,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-versions }}
-          coverage: xdebug
+          coverage: xdebug2
+        env:
+          phpts: ts
+          debug: true
       - name: Install dependencies
         run: composer install
       - name: Run static analysis
