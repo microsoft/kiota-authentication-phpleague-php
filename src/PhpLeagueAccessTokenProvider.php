@@ -295,6 +295,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
 
     /**
      * @param string $claims
+     * @param SpanInterface $span
      * @throws ContinuousAccessEvaluationException
      */
     private function handleFailedCAETokenRefresh(string $claims, SpanInterface $span): void
