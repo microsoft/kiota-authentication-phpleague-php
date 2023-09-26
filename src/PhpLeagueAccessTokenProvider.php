@@ -133,7 +133,6 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
                     if ($cachedToken) {
                         $token = $this->tryCAETokenRefresh($cachedToken, $params, $claims, $span);
                         $this->cacheToken($token, $span);
-                        $span->setAttribute(self::TOKEN_FROM_CACHE_KEY, true);
                         $tokenFromCache = $token->getToken();
                         $span->setAttribute(self::TOKEN_FROM_CACHE_KEY, true);
                         return new FulfilledPromise($tokenFromCache);
@@ -145,6 +144,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
                 $cachedToken = $this->accessTokenCache->getAccessToken($this->tokenRequestContext->getCacheKey());
                 if ($cachedToken) {
                     if ($cachedToken->getExpires() && !$cachedToken->hasExpired()) {
+                        $span->setAttribute(self::TOKEN_FROM_CACHE_KEY, true);
                         return new FulfilledPromise($cachedToken->getToken());
                     }
                     if ($cachedToken->getRefreshToken()) {
@@ -197,9 +197,9 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     private function cacheToken(AccessToken $token, SpanInterface $span): void
     {
         $this->tokenRequestContext->setCacheKey($token);
-        $span->addEvent(self::TOKEN_CACHE_EVENT);
         if ($this->tokenRequestContext->getCacheKey()) {
             $this->accessTokenCache->persistAccessToken($this->tokenRequestContext->getCacheKey(), $token);
+            $span->addEvent(self::TOKEN_CACHE_EVENT);
         }
     }
 
