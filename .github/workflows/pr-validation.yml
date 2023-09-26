@@ -28,6 +28,8 @@ jobs:
         run: composer install
       - name: Run static analysis
         run: ./vendor/bin/phpstan
+      - name: List PHP extensions.
+        run: php -m
       - name: Run tests
         run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
       - name: Fix code coverage paths
