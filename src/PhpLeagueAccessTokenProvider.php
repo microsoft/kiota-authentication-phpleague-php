@@ -23,6 +23,10 @@ use Microsoft\Kiota\Authentication\Oauth\ProviderFactory;
 use Microsoft\Kiota\Authentication\Cache\AccessTokenCache;
 use Microsoft\Kiota\Authentication\Cache\InMemoryAccessTokenCache;
 use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
+use OpenTelemetry\API\Trace\SpanInterface;
+use OpenTelemetry\API\Trace\StatusCode;
+use OpenTelemetry\API\Trace\TracerInterface;
+use OpenTelemetry\Context\Context;
 
 /**
  * Class PhpLeagueAccessTokenProvider
@@ -47,7 +51,11 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @var array<string>
      */
     private array $scopes;
+    /** @var TracerInterface $tracer */
+    private TracerInterface $tracer;
 
+    /** @var ObservabilityOptions $observabilityOptions */
+    private ObservabilityOptions $observabilityOptions;
     /**
      * @var AbstractProvider OAuth 2.0 provider from PHP League library
      */
@@ -65,13 +73,15 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @param array<string> $allowedHosts
      * @param AbstractProvider|null $oauthProvider when null, defaults to a Microsoft Identity Authentication Provider
      * @param AccessTokenCache|null $accessTokenCache defaults to an in-memory cache
+     * @param ObservabilityOptions|null $observabilityOptions
      */
     public function __construct(
         TokenRequestContext $tokenRequestContext,
         array $scopes = [],
         array $allowedHosts = [],
         ?AbstractProvider $oauthProvider = null,
-        ?AccessTokenCache $accessTokenCache = null
+        ?AccessTokenCache $accessTokenCache = null,
+        ?ObservabilityOptions $observabilityOptions = null
     )
     {
         $this->tokenRequestContext = $tokenRequestContext;
@@ -80,33 +90,53 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         $this->allowedHostsValidator->setAllowedHosts($allowedHosts);
         $this->oauthProvider = $oauthProvider ?? ProviderFactory::create($tokenRequestContext);
         $this->accessTokenCache = $accessTokenCache === null ? new InMemoryAccessTokenCache() : $accessTokenCache;
+        $this->observabilityOptions = $observabilityOptions ?? new ObservabilityOptions();
+        $this->tracer = $this->observabilityOptions::getTracer();
 
     }
+
+    private const TOKEN_GET_RESULT_KEY = "get_authorization_token_success";
+    private const TOKEN_FROM_CACHE_KEY = "get_authorization_from_cache";
+    private const CONTAINS_CLAIMS_KEY = "com.microsoft.kiota.authentication.additional_claims_provided";
+    private const TOKEN_CACHE_EVENT = 'token_cached';
+    private const REFRESH_TOKEN_EVENT = 'refresh_token';
+    private const TOKEN_REFRESHED = 'token_refreshed';
+    private const REQUEST_NEW_TOKEN_EVENT = 'new_token_requested';
+    private const SCOPES_KEY = 'com.microsoft.kiota.authentication.scopes';
+    private const URL_VALID_KEY = 'com.microsoft.kiota.authentication.is_url_valid';
 
     /**
      * @inheritDoc
      */
     public function getAuthorizationTokenAsync(string $url, array $additionalAuthenticationContext = []): Promise
     {
+        $span = $this->tracer->spanBuilder('getAuthorizationTokenAsync')
+            ->startSpan();
+        $scope = $span->activate();
         $parsedUrl = parse_url($url);
         $scheme = $parsedUrl["scheme"] ?? null;
         $host = $parsedUrl["host"] ?? null;
-
-        if ($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url)) {
-            return new FulfilledPromise(null);
-        }
-
-        $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];
         try {
-            $params = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
+            if ($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url)) {
+                $span->setAttribute(self::URL_VALID_KEY, false);
+                return new FulfilledPromise(null);
+            }
+            $span->setAttribute(self::URL_VALID_KEY, true);
+            $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];
+            $span->setAttribute(self::SCOPES_KEY, implode(',', $this->scopes));
+            $params       = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
             if ($additionalAuthenticationContext['claims'] ?? false) {
+                $span->setAttribute(self::CONTAINS_CLAIMS_KEY, true);
                 $claims = base64_decode(strval($additionalAuthenticationContext['claims']));
                 if ($this->tokenRequestContext->getCacheKey()) {
                     $cachedToken = $this->accessTokenCache->getAccessToken($this->tokenRequestContext->getCacheKey());
                     if ($cachedToken) {
-                        $token = $this->tryCAETokenRefresh($cachedToken, $params, $claims);
-                        $this->cacheToken($token);
-                        return new FulfilledPromise($token->getToken());
+                        $token = $this->tryCAETokenRefresh($cachedToken, $params, $claims, $span);
+                        $this->cacheToken($token, $span);
+                        $tokenFromCache = $token->getToken();
+                        $span->setAttribute(self::TOKEN_FROM_CACHE_KEY, true);
+                        $span->setAttribute(self::TOKEN_GET_RESULT_KEY, true);
+                        return new FulfilledPromise($tokenFromCache);
                     }
                 }
             }
@@ -115,20 +145,32 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
                 $cachedToken = $this->accessTokenCache->getAccessToken($this->tokenRequestContext->getCacheKey());
                 if ($cachedToken) {
                     if ($cachedToken->getExpires() && !$cachedToken->hasExpired()) {
+                        $span->setAttribute(self::TOKEN_FROM_CACHE_KEY, true);
+                        $span->setAttribute(self::TOKEN_GET_RESULT_KEY, true);
                         return new FulfilledPromise($cachedToken->getToken());
                     }
                     if ($cachedToken->getRefreshToken()) {
-                        $refreshedToken = $this->refreshToken($cachedToken->getRefreshToken());
-                        $this->cacheToken($refreshedToken);
+                        $refreshedToken = $this->refreshToken($cachedToken->getRefreshToken(), [], $span);
+                        $this->cacheToken($refreshedToken, $span);
+                        $span->setAttribute(self::TOKEN_GET_RESULT_KEY, true);
                         return new FulfilledPromise($refreshedToken->getToken());
                     }
                 }
             }
-            $token = $this->requestNewToken($params);
-            $this->cacheToken($token);
-            return new FulfilledPromise($token->getToken());
-        } catch (\Exception $ex) {
+            $token = $this->requestNewToken($params, $span);
+            $this->cacheToken($token, $span);
+            $result = new FulfilledPromise($token->getToken());
+            $span->setAttribute(self::TOKEN_GET_RESULT_KEY, true);
+            $span->setStatus(StatusCode::STATUS_OK);
+            return $result;
+        }
+        catch (\Exception $ex) {
+            $span->recordException($ex);
+            $span->setStatus(StatusCode::STATUS_ERROR);
             return new RejectedPromise($ex);
+        } finally {
+            $scope->detach();
+            $span->end();
         }
     }
 
@@ -153,12 +195,14 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     /**
      * Attempts to cache the access token if the TokenRequestContext provides a cache key
      * @param AccessToken $token
+     * @param SpanInterface $span
      */
-    private function cacheToken(AccessToken $token): void
+    private function cacheToken(AccessToken $token, SpanInterface $span): void
     {
         $this->tokenRequestContext->setCacheKey($token);
         if ($this->tokenRequestContext->getCacheKey()) {
             $this->accessTokenCache->persistAccessToken($this->tokenRequestContext->getCacheKey(), $token);
+            $span->addEvent(self::TOKEN_CACHE_EVENT);
         }
     }
 
@@ -166,11 +210,14 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * Refreshes token
      * @param string $refreshToken
      * @param array<string, string> $params
+     * @param SpanInterface|null $span
      * @return AccessToken
      * @throws IdentityProviderException
      */
-    private function refreshToken(string $refreshToken, array $params = []): AccessToken
+    private function refreshToken(string $refreshToken, array $params = [], ?SpanInterface $span = null): AccessToken
     {
+        assert($span !== null);
+        $span->addEvent(self::REFRESH_TOKEN_EVENT);
         if ($params['claims'] ?? false) {
             $params = $this->mergeClaims(
                 $this->tokenRequestContext->getRefreshTokenParams($refreshToken),
@@ -181,17 +228,21 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
             $this->tokenRequestContext->getRefreshTokenParams($refreshToken),
             $params
         );
+        $result = $this->oauthProvider->getAccessToken('refresh_token', $params);
+        $span->setAttribute(self::TOKEN_REFRESHED, true);
         // @phpstan-ignore-next-line
-        return $this->oauthProvider->getAccessToken('refresh_token', $params);
+        return $result;
     }
 
     /**
      * @param array<string, string> $params
+     * @param SpanInterface $span
      * @return AccessToken
      * @throws IdentityProviderException
      */
-    private function requestNewToken(array $params): AccessToken
+    private function requestNewToken(array $params, SpanInterface $span): AccessToken
     {
+        $span->addEvent(self::REQUEST_NEW_TOKEN_EVENT);
         if ($this->tokenRequestContext->isCAEEnabled()) {
             $params = $this->mergeClaims($params, self::CP1_CLAIM);
         }
@@ -207,52 +258,93 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @param AccessToken $cachedToken
      * @param array<string, string> $initialParams
      * @param string $claims
+     * @param SpanInterface $span
      * @return AccessToken
      * @throws ContinuousAccessEvaluationException
      * @throws IdentityProviderException
      */
-    private function tryCAETokenRefresh(AccessToken $cachedToken, array $initialParams, string $claims): AccessToken
+    private function tryCAETokenRefresh(AccessToken $cachedToken, array $initialParams, string $claims, SpanInterface $span): AccessToken
     {
-        if ($cachedToken->getRefreshToken()) {
-            try {
-                return $this->refreshToken($cachedToken->getRefreshToken(), ['claims' => $claims]);
-            } catch (\Exception $ex) {
-                $this->handleFailedCAETokenRefresh($claims);
-                return $this->requestNewToken($initialParams);
+        $childSpan = $this->tracer->spanBuilder('tryCAETokenRefresh')
+            ->setParent(Context::getCurrent())
+            ->addLink($span->getContext())
+            ->startSpan();
+        $scope = $childSpan->activate();
+        try {
+            if ($cachedToken->getRefreshToken()) {
+                try {
+                    $result = $this->refreshToken($cachedToken->getRefreshToken(),
+                        ['claims' => $claims],
+                        $childSpan);
+                    $childSpan->setStatus(StatusCode::STATUS_OK);
+                    return $result;
+                } catch (\Exception $ex) {
+                    $childSpan->recordException($ex);
+                    $childSpan->setStatus(StatusCode::STATUS_ERROR);
+                    $this->handleFailedCAETokenRefresh($claims, $childSpan);
+                    return $this->requestNewToken($initialParams, $childSpan);
+                }
             }
+            $this->handleFailedCAETokenRefresh($claims, $childSpan);
+            return $this->requestNewToken($initialParams, $childSpan);
+        } finally {
+            $scope->detach();
+            $childSpan->end();
         }
-        $this->handleFailedCAETokenRefresh($claims);
-        return $this->requestNewToken($initialParams);
     }
 
     /**
      * @param string $claims
+     * @param SpanInterface $span
      * @throws ContinuousAccessEvaluationException
      */
-    private function handleFailedCAETokenRefresh(string $claims): void
+    private function handleFailedCAETokenRefresh(string $claims, SpanInterface $span): void
     {
-        if (!$this->tokenRequestContext->getCAERedirectCallback()) {
-            throw new ContinuousAccessEvaluationException(
-                "Token refresh failed and no redirect callback was provided.
+        $childSpan = $this->tracer->spanBuilder('handleFailedCAETokenRefresh')
+            ->setParent(Context::getCurrent())
+            ->addLink($span->getContext())
+            ->startSpan();
+        try {
+            if (!$this->tokenRequestContext->getCAERedirectCallback()) {
+                $span->setStatus(StatusCode::STATUS_ERROR);
+                $ex = new ContinuousAccessEvaluationException(
+                    "Token refresh failed and no redirect callback was provided.
                 Use the claims property and redirect your customer to the login page",
-                $claims
-            );
+                    $claims
+                );
+                $span->recordException($ex);
+                throw $ex;
+            }
+            $promise = $this->tokenRequestContext->getCAERedirectCallback()($claims);
+            if (!$promise instanceof Promise) {
+                $span->setStatus(StatusCode::STATUS_ERROR);
+                $ex = new ContinuousAccessEvaluationException(
+                    "Redirect callback should return a promise that resolves to a valid TokenRequestContext",
+                    $claims
+                );
+                $span->recordException($ex);
+                throw $ex;
+            }
+            $context = null;
+            try {
+                $context = $promise->wait();
+            } catch (Exception $exception) {
+                $span->setStatus(StatusCode::STATUS_ERROR);
+                $span->recordException($exception);
+            }
+            if (!$context instanceof TokenRequestContext) {
+                $span->setStatus(StatusCode::STATUS_ERROR);
+                $ex = new ContinuousAccessEvaluationException(
+                    "Redirect callback did not return a valid TokenRequestContext",
+                    $claims
+                );
+                $span->recordException($ex);
+                throw $ex;
+            }
+            $this->tokenRequestContext = $context;
+        } finally {
+            $childSpan->end();
         }
-        $promise = $this->tokenRequestContext->getCAERedirectCallback()($claims);
-        if (!$promise instanceof Promise) {
-            throw new ContinuousAccessEvaluationException(
-                "Redirect callback should return a promise that resolves to a valid TokenRequestContext",
-                $claims
-            );
-        }
-        $context = $promise->wait();
-        if (!$context instanceof TokenRequestContext) {
-            throw new ContinuousAccessEvaluationException(
-                "Redirect callback did not return a valid TokenRequestContext",
-                $claims
-            );
-        }
-        $this->tokenRequestContext = $context;
     }
 
     /**
