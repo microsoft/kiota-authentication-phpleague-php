@@ -47,6 +47,8 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @var AllowedHostsValidator Validates whether a token should be fetched for a request url
      */
     private AllowedHostsValidator $allowedHostsValidator;
+
+    public const LOCALHOST_STRINGS = ['localhost', '[::1]', '127.0.0.1'];
     /**
      * @var array<string>
      */
@@ -115,9 +117,12 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         $scope = $span->activate();
         $parsedUrl = parse_url($url);
         $scheme = $parsedUrl["scheme"] ?? null;
-        $host = $parsedUrl["host"] ?? null;
+        $host = $parsedUrl["host"] ?? '';
         try {
-            if ($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url)) {
+            $isLocalhost = $this->isLocalHostUrl($host);
+
+            if (($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url))
+                && !$isLocalhost) {
                 $span->setAttribute(self::URL_VALID_KEY, false);
                 return new FulfilledPromise(null);
             }
@@ -175,11 +180,38 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     }
 
     /**
+     * Check if the given host string is a localhost string.
+     * @param string $host
+     * @return bool
+     */
+    private function isLocalHostUrl(string $host): bool
+    {
+        $lowerCasedHost = strtolower($host);
+
+        foreach (self::LOCALHOST_STRINGS as $localhostString) {
+            if (str_starts_with($lowerCasedHost, $localhostString) || $lowerCasedHost == ':') {
+                $remain = substr($lowerCasedHost, strlen($localhostString));
+                return $this->isValidRemainder($remain);
+            }
+        }
+        return false;
+    }
+    /**
      * @inheritDoc
      */
     public function getAllowedHostsValidator(): AllowedHostsValidator
     {
         return $this->allowedHostsValidator;
+    }
+
+    /**
+     * Check if the remaining string after splitting the valid host part is empty or contains a colon.
+     * @param string $remain
+     * @return bool
+     */
+    private function isValidRemainder(string $remain): bool
+    {
+        return trim($remain) === '' || str_starts_with($remain, ':');
     }
 
     /**
