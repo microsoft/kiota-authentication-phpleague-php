@@ -197,7 +197,6 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
         $tokenRequestContext  = new ClientCredentialContext('tenant', 'client', 'secret');
         foreach(array_keys(PhpLeagueAccessTokenProvider::LOCALHOST_STRINGS) as $host) {
             $mockResponses = [
-                new Response(200, [], json_encode(['access_token' => $this->testJWT, 'expires_in' => 0.1])),
                 function (Request $request) use ($tokenRequestContext, $host) {
                     parse_str($request->getBody()->getContents(), $requestBodyMap);
                     $expectedBody = array_merge($tokenRequestContext->getParams(), [
