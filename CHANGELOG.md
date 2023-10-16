@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds CHANGELOG.
 
 ### Changed
-
+- Allow `http` scheme for localhost urls. [#56](https://github.com/microsoft/kiota-authentication-phpleague-php/pull/56)
 
 ## [0.8.3] - 2023-10-05
 
