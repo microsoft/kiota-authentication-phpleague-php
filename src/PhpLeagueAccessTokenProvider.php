@@ -48,7 +48,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      */
     private AllowedHostsValidator $allowedHostsValidator;
 
-    public const LOCALHOST_STRINGS = ['localhost', '[::1]', '127.0.0.1'];
+    public const LOCALHOST_STRINGS = ['localhost' => true, '::1' => true, '[::1]' => true, '127.0.0.1' => true];
     /**
      * @var array<string>
      */
@@ -187,14 +187,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     private function isLocalHostUrl(string $host): bool
     {
         $lowerCasedHost = strtolower($host);
-
-        foreach (self::LOCALHOST_STRINGS as $localhostString) {
-            if (str_starts_with($lowerCasedHost, $localhostString) || $lowerCasedHost == ':') {
-                $remain = substr($lowerCasedHost, strlen($localhostString));
-                return $this->isValidRemainder($remain);
-            }
-        }
-        return false;
+        return array_key_exists($lowerCasedHost, self::LOCALHOST_STRINGS) || $lowerCasedHost === ':';
     }
     /**
      * @inheritDoc
@@ -202,16 +195,6 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     public function getAllowedHostsValidator(): AllowedHostsValidator
     {
         return $this->allowedHostsValidator;
-    }
-
-    /**
-     * Check if the remaining string after splitting the valid host part is empty or contains a colon.
-     * @param string $remain
-     * @return bool
-     */
-    private function isValidRemainder(string $remain): bool
-    {
-        return trim($remain) === '' || str_starts_with($remain, ':');
     }
 
     /**

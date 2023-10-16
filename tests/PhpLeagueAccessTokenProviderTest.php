@@ -195,7 +195,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
     public function testGetAccessTokenWithLocalhostStringWithHttpReturnsAccessToken(): void
     {
         $tokenRequestContext  = new ClientCredentialContext('tenant', 'client', 'secret');
-        foreach(PhpLeagueAccessTokenProvider::LOCALHOST_STRINGS as $host) {
+        foreach(array_keys(PhpLeagueAccessTokenProvider::LOCALHOST_STRINGS) as $host) {
             $mockResponses = [
                 new Response(200, [], json_encode(['access_token' => $this->testJWT, 'expires_in' => 0.1])),
                 function (Request $request) use ($tokenRequestContext, $host) {
@@ -207,7 +207,7 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
                     return new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 1]));
                 },
             ];
-            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, ["https://$host/.default"]);
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, ["http://$host/.default"]);
             $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
             $token         = $tokenProvider->getAuthorizationTokenAsync("http://$host")->wait();
             assertNotEmpty($token);
