@@ -21,6 +21,9 @@ use Microsoft\Kiota\Authentication\PhpLeagueAccessTokenProvider;
 use Microsoft\Kiota\Authentication\Test\Stub\StubAccessTokenCache;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
+use function PHPUnit\Framework\assertEquals;
+use function PHPUnit\Framework\assertNotEmpty;
+use function PHPUnit\Framework\assertNotNull;
 
 class PhpLeagueAccessTokenProviderTest extends TestCase
 {
@@ -187,6 +190,27 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
     public function testGetAuthTokenWithInsecureUrlDoesntReturnAccessToken(): void
     {
         $this->assertNull($this->defaultTokenProvider->getAuthorizationTokenAsync('http://example.com')->wait());
+    }
+
+    public function testGetAccessTokenWithLocalhostStringWithHttpReturnsAccessToken(): void
+    {
+        $tokenRequestContext  = new ClientCredentialContext('tenant', 'client', 'secret');
+        foreach(array_keys(PhpLeagueAccessTokenProvider::LOCALHOST_STRINGS) as $host) {
+            $mockResponses = [
+                function (Request $request) use ($tokenRequestContext, $host) {
+                    parse_str($request->getBody()->getContents(), $requestBodyMap);
+                    $expectedBody = array_merge($tokenRequestContext->getParams(), [
+                        'scope' => "http://$host/.default"
+                    ]);
+                    $this->assertEquals($expectedBody, $requestBodyMap);
+                    return new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 1]));
+                },
+            ];
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, ["http://$host/.default"]);
+            $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
+            $token         = $tokenProvider->getAuthorizationTokenAsync("http://$host")->wait();
+            assertNotEmpty($token);
+        }
     }
 
     public function testCAEMergingClaims(): void

@@ -47,6 +47,8 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      * @var AllowedHostsValidator Validates whether a token should be fetched for a request url
      */
     private AllowedHostsValidator $allowedHostsValidator;
+
+    public const LOCALHOST_STRINGS = ['localhost' => true, '::1' => true, '[::1]' => true, '127.0.0.1' => true];
     /**
      * @var array<string>
      */
@@ -115,9 +117,12 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         $scope = $span->activate();
         $parsedUrl = parse_url($url);
         $scheme = $parsedUrl["scheme"] ?? null;
-        $host = $parsedUrl["host"] ?? null;
+        $host = $parsedUrl["host"] ?? '';
         try {
-            if ($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url)) {
+            $isLocalhost = $this->isLocalHostUrl($host);
+
+            if (($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url))
+                && !$isLocalhost) {
                 $span->setAttribute(self::URL_VALID_KEY, false);
                 return new FulfilledPromise(null);
             }
@@ -174,6 +179,16 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         }
     }
 
+    /**
+     * Check if the given host string is a localhost string.
+     * @param string $host
+     * @return bool
+     */
+    private function isLocalHostUrl(string $host): bool
+    {
+        $lowerCasedHost = strtolower($host);
+        return array_key_exists($lowerCasedHost, self::LOCALHOST_STRINGS) || $lowerCasedHost === ':';
+    }
     /**
      * @inheritDoc
      */
