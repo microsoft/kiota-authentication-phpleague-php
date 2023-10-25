@@ -13,7 +13,7 @@
         "php": "^7.4 | ^8.0",
         "league/oauth2-client": "^2.6.1",
         "php-http/promise": "^1.1.0",
-        "microsoft/kiota-abstractions": "^0.9.0",
+        "microsoft/kiota-abstractions": "dev-fix/promises-generics",
         "firebase/php-jwt": "^v6.0.0",
         "ramsey/uuid": "^4.2.3",
         "ext-openssl": "*",
@@ -31,6 +31,11 @@
     "autoload-dev": {
         "psr-4": {
             "Microsoft\\Kiota\\Authentication\\Test\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": false
         }
     }
 }
