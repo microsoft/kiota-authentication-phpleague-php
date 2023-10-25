@@ -13,6 +13,7 @@ use Exception;
 use Http\Promise\FulfilledPromise;
 use Http\Promise\Promise;
 use Http\Promise\RejectedPromise;
+use InvalidArgumentException;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
@@ -112,8 +113,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
      */
     public function getAuthorizationTokenAsync(string $url, array $additionalAuthenticationContext = []): Promise
     {
-        $span = $this->tracer->spanBuilder('getAuthorizationTokenAsync')
-            ->startSpan();
+        $span = $this->tracer->spanBuilder('getAuthorizationTokenAsync')->startSpan();
         $scope = $span->activate();
         $parsedUrl = parse_url($url);
         $scheme = $parsedUrl["scheme"] ?? null;
@@ -124,7 +124,7 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
             if (($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url))
                 && !$isLocalhost) {
                 $span->setAttribute(self::URL_VALID_KEY, false);
-                return new FulfilledPromise(null);
+                throw new InvalidArgumentException("Invalid URL provided. URL must be HTTPS and part of the allowed hosts.");
             }
             $span->setAttribute(self::URL_VALID_KEY, true);
             $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];

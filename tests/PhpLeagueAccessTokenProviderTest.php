@@ -8,6 +8,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Http\Promise\FulfilledPromise;
+use InvalidArgumentException;
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Kiota\Authentication\Oauth\AuthorizationCodeCertificateContext;
 use Microsoft\Kiota\Authentication\Oauth\AuthorizationCodeContext;
@@ -189,7 +190,8 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
 
     public function testGetAuthTokenWithInsecureUrlDoesntReturnAccessToken(): void
     {
-        $this->assertNull($this->defaultTokenProvider->getAuthorizationTokenAsync('http://example.com')->wait());
+        $this->expectException(InvalidArgumentException::class);
+        $this->defaultTokenProvider->getAuthorizationTokenAsync('http://example.com')->wait();
     }
 
     public function testGetAccessTokenWithLocalhostStringWithHttpReturnsAccessToken(): void
