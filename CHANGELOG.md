@@ -8,10 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Adds CHANGELOG.
+
+
+### Changed
+
+## [0.9.0] - 2023-10-30
+
+### Added
+- Adds CHANGELOG. [#54](https://github.com/microsoft/kiota-authentication-phpleague-php/pull/54)
+- Adds Generics to Promise return types. [#59](https://github.com/microsoft/kiota-authentication-phpleague-php/pull/59)
 
 ### Changed
 - Allow `http` scheme for localhost urls. [#56](https://github.com/microsoft/kiota-authentication-phpleague-php/pull/56)
+- Disable PHP-HTTP discovery plugin. [#58](https://github.com/microsoft/kiota-authentication-phpleague-php/pull/58)
 
 ## [0.8.3] - 2023-10-05
 
