@@ -119,17 +119,21 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         $scheme = $parsedUrl["scheme"] ?? null;
         $host = $parsedUrl["host"] ?? '';
         try {
+            if (!$this->getAllowedHostsValidator()->isUrlHostValid($url)) {
+                $span->setAttribute(self::URL_VALID_KEY, false);
+                return new FulfilledPromise(null);
+            }
+
             $isLocalhost = $this->isLocalHostUrl($host);
 
-            if (($scheme !== 'https' || !$this->getAllowedHostsValidator()->isUrlHostValid($url))
-                && !$isLocalhost) {
+            if ($scheme !== 'https' && !$isLocalhost) {
                 $span->setAttribute(self::URL_VALID_KEY, false);
-                throw new InvalidArgumentException("Invalid URL provided. URL must be HTTPS and part of the allowed hosts.");
+                throw new InvalidArgumentException("Invalid URL. External URLs MUST use HTTPS and localhost URLs MAY use HTTP.");
             }
             $span->setAttribute(self::URL_VALID_KEY, true);
             $this->scopes = $this->scopes ?: ["{$scheme}://{$host}/.default"];
             $span->setAttribute(self::SCOPES_KEY, implode(',', $this->scopes));
-            $params       = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
+            $params = array_merge($this->tokenRequestContext->getParams(), ['scope' => implode(' ', $this->scopes)]);
             if ($additionalAuthenticationContext['claims'] ?? false) {
                 $span->setAttribute(self::CONTAINS_CLAIMS_KEY, true);
                 $claims = base64_decode(strval($additionalAuthenticationContext['claims']));
