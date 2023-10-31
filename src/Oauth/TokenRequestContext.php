@@ -78,7 +78,7 @@ interface TokenRequestContext
      * If this callback returns a Promise that resolves to a new token request context with the new authentication
      * code/assertion then a new token is requested.
      *
-     * @return null|callable(string $claims): Promise
+     * @return null|callable(string $claims): Promise<TokenRequestContext>
      */
     public function getCAERedirectCallback(): ?callable;
 }
