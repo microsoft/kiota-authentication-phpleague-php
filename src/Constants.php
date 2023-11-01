@@ -4,5 +4,5 @@ namespace Microsoft\Kiota\Authentication;
 
 class Constants
 {
-    public const VERSION = "0.10.0";
+    public const VERSION = "1.0.0";
 }
