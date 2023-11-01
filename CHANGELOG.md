@@ -9,8 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+## [0.10.0] - 2023-11-01
 
 ### Changed
+- Bump abstractions package.
+- Use stable OpenTelemetry library
 
 ## [0.9.0] - 2023-10-30
 
