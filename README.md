@@ -1,6 +1,6 @@
 # Kiota Authentication Provider Library for PHP
 
-![PHP](https://github.com/microsoft/kiota-authentication-phpleague-php/actions/workflows/pr-validation.yml/badge.svg)
+![Build Status](https://github.com/microsoft/kiota-authentication-phpleague-php/actions/workflows/pr-validation.yml/badge.svg)
 [![Latest Stable Version](https://poser.pugx.org/microsoft/kiota-authentication-phpleague/version)](https://packagist.org/packages/microsoft/kiota-authentication-phpleague)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=microsoft_kiota-authentication-phpleague-php&metric=coverage)](https://sonarcloud.io/dashboard?id=microsoft_kiota-authentication-phpleague-php)
 
@@ -18,7 +18,7 @@ run `composer require microsoft/kiota-authentication-phpleague` or add the follo
 ```Shell
 {
     "require": {
-        "microsoft/kiota-authentication-phpleague": "^0.1.0"
+        "microsoft/kiota-authentication-phpleague": "^1.0.1"
     }
 }
 ```
