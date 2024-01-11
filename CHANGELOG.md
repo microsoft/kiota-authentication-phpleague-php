@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.0.2]
+
+### Changed
+- Removed direct dependency on `php-http/promise`. `kiota-abstractions` should determine which promise lib version is installed
+
 ## [1.0.1]
 
 ### Changed
