@@ -212,6 +212,16 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
     }
 
     /**
+     * Returns the underlying cache
+     *
+     * @return AccessTokenCache
+     */
+    public function getAccessTokenCache(): AccessTokenCache
+    {
+        return $this->accessTokenCache;
+    }
+
+    /**
      * Attempts to cache the access token if the TokenRequestContext provides a cache key
      * @param AccessToken $token
      * @param SpanInterface $span
