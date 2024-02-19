@@ -92,8 +92,12 @@ class InMemoryAccessTokenCache implements AccessTokenCache
      *
      * @param TokenRequestContext $tokenRequestContext
      * @return AccessToken|null
+     * @throws InvalidArgumentException if $tokenRequestContext has a null cache key
      */
     public function getTokenWithContext(TokenRequestContext $tokenRequestContext): ?AccessToken {
+        if (is_null($tokenRequestContext->getCacheKey())) {
+            throw new InvalidArgumentException("Unable to get token using context with a null cache key");
+        }
         return $this->getAccessToken($tokenRequestContext->getCacheKey());
     }
 }
