@@ -39,7 +39,6 @@ class InMemoryAccessTokenCache implements AccessTokenCache
             }
 
             $this->accessTokens[$tokenRequestContext->getCacheKey()] = $accessToken;
-            return;
         }
     }
 
@@ -49,7 +48,8 @@ class InMemoryAccessTokenCache implements AccessTokenCache
      * @param TokenRequestContext $tokenRequestContext
      * @param AccessToken $accessToken
      * @return self
-     * @throws InvalidArgumentException if the cache key cannot be initialized OR the cache already contains an access token with the same identity/TokenRequestContext
+     * @throws InvalidArgumentException if the cache key cannot be initialized
+     * OR the cache already contains an access token with the same identity/TokenRequestContext
      */
     public function withToken(TokenRequestContext $tokenRequestContext, AccessToken $accessToken): self
     {
