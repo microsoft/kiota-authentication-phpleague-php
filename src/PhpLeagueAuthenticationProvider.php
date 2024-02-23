@@ -45,4 +45,23 @@ class PhpLeagueAuthenticationProvider extends BaseBearerTokenAuthenticationProvi
         return $this->accessTokenProvider;
     }
 
+    /**
+     * Get an instance of PhpLeagueAuthenticationProvider your custom PhpLeagueAccessTokenProvider
+     *
+     * @param PhpLeagueAccessTokenProvider $phpLeagueAccessTokenProvider
+     * @return self
+     */
+    public static function createWithAccessTokenProvider(
+        PhpLeagueAccessTokenProvider $phpLeagueAccessTokenProvider
+        ): self
+    {
+        $authProvider = new PhpLeagueAuthenticationProvider(
+            $phpLeagueAccessTokenProvider->getTokenRequestContext(),
+            $phpLeagueAccessTokenProvider->getScopes(),
+            $phpLeagueAccessTokenProvider->getAllowedHosts()
+        );
+        $authProvider->accessTokenProvider = $phpLeagueAccessTokenProvider;
+        return $authProvider;
+    }
+
 }

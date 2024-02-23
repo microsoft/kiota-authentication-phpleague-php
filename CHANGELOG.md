@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.1.0]
+
+### Added
+- Enables initialising the `InMemoryAccessTokenCache` with tokens for re-use by the auth provider
+- Exposes the access token cache used in the `PhpLeagueAccessTokenProvider` using `getAccessTokenCache()`
+
 ## [1.0.2]
 
 ### Changed
