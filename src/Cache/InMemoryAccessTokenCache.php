@@ -33,12 +33,7 @@ class InMemoryAccessTokenCache implements AccessTokenCache
     public function __construct(?TokenRequestContext $tokenRequestContext = null, ?AccessToken $accessToken = null)
     {
         if ($tokenRequestContext && $accessToken) {
-            $tokenRequestContext->setCacheKey($accessToken);
-            if (!$tokenRequestContext->getCacheKey()) {
-                throw new InvalidArgumentException("Unable to initialize cache key for context using access token");
-            }
-
-            $this->accessTokens[$tokenRequestContext->getCacheKey()] = $accessToken;
+            $this->withToken($tokenRequestContext, $accessToken);
         }
     }
 
