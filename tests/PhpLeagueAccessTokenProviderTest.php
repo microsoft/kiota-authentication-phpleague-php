@@ -10,6 +10,7 @@ use GuzzleHttp\Psr7\Response;
 use Http\Promise\FulfilledPromise;
 use InvalidArgumentException;
 use League\OAuth2\Client\Token\AccessToken;
+use Microsoft\Kiota\Authentication\Cache\AccessTokenCache;
 use Microsoft\Kiota\Authentication\Cache\InMemoryAccessTokenCache;
 use Microsoft\Kiota\Authentication\Oauth\AuthorizationCodeCertificateContext;
 use Microsoft\Kiota\Authentication\Oauth\AuthorizationCodeContext;
@@ -103,6 +104,43 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
         foreach ($oauthContexts as $tokenRequestContext) {
             $cache = new InMemoryAccessTokenCache($tokenRequestContext, new AccessToken(['access_token' => $this->testJWT, 'expires' => time() + 5]));
             $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $cache);
+            $mockResponses = [
+                new Response(400),
+            ];
+            $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
+            $this->assertEquals($this->testJWT, $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
+        }
+    }
+
+    public function testGetAuthorizationTokenWithCustomCacheAndCustomCacheKey(): void
+    {
+        $customCache = (new class(
+            [
+                'key' => new AccessToken(['access_token' => $this->testJWT, 'expires' => time() + 5])
+            ]
+        ) implements AccessTokenCache {
+            private $accessTokens = [];
+
+            public function __construct($tokenMap) {
+                $this->accessTokens = $tokenMap;
+            }
+
+            public function getAccessToken(string $identity): ?AccessToken
+            {
+                return $this->accessTokens[$identity] ?? null;
+            }
+
+            public function persistAccessToken(string $identity, AccessToken $accessToken): void
+            {
+                $this->accessTokens[$identity] = $accessToken;
+            }
+        });
+
+        $oauthContexts = $this->getOauthContexts();
+        /** @var TokenRequestContext $tokenRequestContext */
+        foreach ($oauthContexts as $tokenRequestContext) {
+            $tokenRequestContext->setCustomCacheKey('key');
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $customCache);
             $mockResponses = [
                 new Response(400),
             ];

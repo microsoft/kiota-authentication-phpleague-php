@@ -10,6 +10,7 @@ namespace Microsoft\Kiota\Authentication\Oauth;
 
 
 use League\OAuth2\Client\Token\AccessToken;
+use \InvalidArgumentException;
 
 trait ApplicationPermissionTrait
 {
@@ -40,6 +41,20 @@ trait ApplicationPermissionTrait
     public function setCacheKey(?AccessToken $accessToken = null): void
     {
         $this->cacheKey = "{$this->getTenantId()}-{$this->getClientId()}";
+    }
+
+    /**
+     * Set the cache identifier for a user/application.
+     *
+     * @param string $identifier
+     * @return void
+     */
+    public function setCustomCacheKey(string $identifier): void
+    {
+        if (!$identifier) {
+            throw new InvalidArgumentException("Cache key cannot be set to an empty string");
+        }
+        $this->cacheKey = $identifier;
     }
 
     /**
