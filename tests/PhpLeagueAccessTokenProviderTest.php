@@ -203,6 +203,37 @@ class PhpLeagueAccessTokenProviderTest extends TestCase
         }
     }
 
+    public function testTokenIsRefreshedWhenCachedTokenIsExpired(): void
+    {
+        $oauthContexts = $this->getOauthContexts();
+        /** @var TokenRequestContext $tokenRequestContext */
+        foreach ($oauthContexts as $tokenRequestContext) {
+            $cache = new InMemoryAccessTokenCache($tokenRequestContext, new AccessToken(['access_token' => $this->testJWT, 'refresh_token' => 'refresh', 'expires' => time() - 5]));
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $cache);
+            $mockResponses = [
+                new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 1]))
+            ];
+            $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
+            $this->assertEquals('xyz', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
+        }
+    }
+
+    public function testNewTokenIsRequestedAndCacheUpdatedIfCachedTokenExpiredAndNoRefreshTokenExists(): void
+    {
+        $oauthContexts = $this->getOauthContexts();
+        /** @var TokenRequestContext $tokenRequestContext */
+        foreach ($oauthContexts as $tokenRequestContext) {
+            $cache = new InMemoryAccessTokenCache($tokenRequestContext, new AccessToken(['access_token' => $this->testJWT, 'expires' => time() - 5]));
+            $tokenProvider = new PhpLeagueAccessTokenProvider($tokenRequestContext, [], [], null, $cache);
+            $mockResponses = [
+                new Response(200, [], json_encode(['access_token' => 'xyz', 'expires_in' => 1]))
+            ];
+            $tokenProvider->getOauthProvider()->setHttpClient($this->getMockHttpClient($mockResponses));
+            $this->assertEquals('xyz', $tokenProvider->getAuthorizationTokenAsync('https://graph.microsoft.com')->wait());
+            $this->assertEquals('xyz', $cache->getTokenWithContext($tokenRequestContext));
+        }
+    }
+
     public function testGetAuthorizationTokenFetchesNewTokenIfNoRefreshTokenExists(): void
     {
         $oauthContexts = $this->getOauthContexts();
