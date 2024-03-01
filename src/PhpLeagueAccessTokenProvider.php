@@ -28,6 +28,7 @@ use OpenTelemetry\API\Trace\SpanInterface;
 use OpenTelemetry\API\Trace\StatusCode;
 use OpenTelemetry\API\Trace\TracerInterface;
 use OpenTelemetry\Context\Context;
+use RuntimeException;
 
 /**
  * Class PhpLeagueAccessTokenProvider
@@ -255,8 +256,10 @@ class PhpLeagueAccessTokenProvider implements AccessTokenProvider
         if (!$this->tokenRequestContext->getCacheKey()) {
             $this->tokenRequestContext->setCacheKey($token);
         }
-        $this->accessTokenCache->persistAccessToken($this->tokenRequestContext->getCacheKey(), $token);
-        $span->addEvent(self::TOKEN_CACHE_EVENT);
+        if ($this->tokenRequestContext->getCacheKey()) {
+            $this->accessTokenCache->persistAccessToken($this->tokenRequestContext->getCacheKey(), $token);
+            $span->addEvent(self::TOKEN_CACHE_EVENT);
+        }
     }
 
     /**
