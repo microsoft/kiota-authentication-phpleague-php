@@ -7,10 +7,7 @@ resource: repository
 configuration:
   branchProtectionRules:
 
-  - branchNamePattern: dev
-    # This branch pattern applies to the following branches as of 06/09/2023 14:08:44:
-    # dev
-
+  - branchNamePattern: main
     # Specifies whether this branch can be deleted. boolean
     allowsDeletions: false
     # Specifies whether forced pushes are allowed on this branch. boolean
