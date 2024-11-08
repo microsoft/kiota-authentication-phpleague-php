@@ -4,6 +4,7 @@ namespace Microsoft\Kiota\Authentication\Test\Cache;
 
 use League\OAuth2\Client\Token\AccessToken;
 use Microsoft\Kiota\Authentication\Cache\InMemoryAccessTokenCache;
+use Microsoft\Kiota\Authentication\Oauth\AuthorizationCodeContext;
 use Microsoft\Kiota\Authentication\Oauth\ClientCredentialContext;
 use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
 use PHPUnit\Framework\TestCase;
@@ -57,5 +58,16 @@ class InMemoryAccessTokenCacheTest extends TestCase
 
         $this->assertInstanceOf(AccessToken::class, $cache->getTokenWithContext($this->testTokenRequestContext));
         $this->assertInstanceOf(AccessToken::class, $cache->getTokenWithContext($secondContext));
+    }
+
+    public function testCacheKeyIsSetForNonJWTToken() {
+        $accessToken = $this->createMock(AccessToken::class);
+        $accessToken->method('getToken')->willReturn('token');
+
+        $cache = new InMemoryAccessTokenCache();
+        $delegatedTokenRequestContext = new AuthorizationCodeContext("tenantId", "clientId", "clientSecret", "redirectUri", "code");
+        $cache->withToken($delegatedTokenRequestContext, $accessToken);
+
+        $this->assertNotEmpty($delegatedTokenRequestContext->getCacheKey());
     }
 }

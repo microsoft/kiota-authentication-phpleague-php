@@ -32,7 +32,7 @@ trait ApplicationPermissionTrait
 
     /**
      * Set the identity of the user/application. This is used as the unique cache key
-     * For delegated permissions the key is {tenantId}-{clientId}-{userId}
+     * For delegated permissions the key is {tenantId}-{clientId}-{accessTokenHash}
      * For application permissions, they key is {tenantId}-{clientId}
      * @param AccessToken|null $accessToken
      * @return void
@@ -44,7 +44,7 @@ trait ApplicationPermissionTrait
 
     /**
      * Return the identity of the user/application. This is used as the unique cache key
-     * For delegated permissions the key is {tenantId}-{clientId}-{userId}
+     * For delegated permissions the key is {tenantId}-{clientId}-{accessTokenHash}
      * For application permissions, they key is {tenantId}-{clientId}
      * @return string|null
      */

@@ -11,7 +11,6 @@ namespace Microsoft\Kiota\Authentication\Oauth;
 
 use League\OAuth2\Client\Token\AccessToken;
 
-
 trait DelegatedPermissionTrait
 {
     use CAEConfigurationTrait;
@@ -33,7 +32,7 @@ trait DelegatedPermissionTrait
 
     /**
      * Set the identity of the user/application. This is used as the unique cache key
-     * For delegated permissions the key is {tenantId}-{clientId}-{userId}
+     * For delegated permissions the key is {tenantId}-{clientId}-{accessTokenHash}
      * For application permissions, they key is {tenantId}-{clientId}
      * @param AccessToken|null $accessToken
      * @return void
@@ -41,20 +40,14 @@ trait DelegatedPermissionTrait
     public function setCacheKey(?AccessToken $accessToken = null): void
     {
         if ($accessToken && $accessToken->getToken()) {
-            $tokenParts = explode('.', $accessToken->getToken());
-            if (count($tokenParts) == 3) {
-                $payload = json_decode(base64_decode($tokenParts[1]), true);
-                if (is_array($payload) && array_key_exists('sub', $payload)) {
-                    $subject = $payload['sub'];
-                    $this->cacheKey = ($subject) ? "{$this->getTenantId()}-{$this->getClientId()}-{$subject}" : null;
-                }
-            }
+            $uniqueIdentifier = password_hash($accessToken->getToken(), PASSWORD_DEFAULT);
+            $this->cacheKey = "{$this->getTenantId()}-{$this->getClientId()}-{$uniqueIdentifier}";
         }
     }
 
     /**
      * Return the identity of the user/application. This is used as the unique cache key
-     * For delegated permissions the key is {tenantId}-{clientId}-{userId}
+     * For delegated permissions the key is {tenantId}-{clientId}-{accessTokenHash}
      * For application permissions, they key is {tenantId}-{clientId}
      * @return string|null
      */
