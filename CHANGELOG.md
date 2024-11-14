@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.3.0] - 2024-11-14
+
+### Changed
+- Fix caching access tokens for delegated permissions. [#98](https://github.com/microsoft/kiota-authentication-phpleague-php/pull/98)
+
+## [1.2.0]
+
+### Added
+- Add client options to the `ProviderFactory::create` by @SilasKenneth in https://github.com/microsoft/kiota-authentication-phpleague-php/pull/88
+
 ## [1.1.0]
 
 ### Added
