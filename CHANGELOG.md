@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.3.1] - 2024-11-27
+
+### Changed
+
+- Makes cache keys reproducible in Delegated permission contexts
+- Makes auth code optional to support cases when AuthCodeContext is used with an already cached token
+
 ## [1.3.0] - 2024-11-14
 
 ### Changed
