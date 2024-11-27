@@ -70,4 +70,20 @@ class InMemoryAccessTokenCacheTest extends TestCase
 
         $this->assertNotEmpty($delegatedTokenRequestContext->getCacheKey());
     }
+
+    public function testCacheKeyForDelegatedPermissionsIsReproducible() {
+        $accessToken = $this->createMock(AccessToken::class);
+        $accessToken->method('getToken')->willReturn('token');
+
+        $delegatedTokenRequestContext = new AuthorizationCodeContext("tenantId", "clientId", "clientSecret", "redirectUri", "code");
+        $delegatedTokenRequestContext->setCacheKey($accessToken);
+        $this->assertEquals("tenantId-clientId-".hash("sha256", 'token'), $delegatedTokenRequestContext->getCacheKey());
+        $cache = new InMemoryAccessTokenCache($delegatedTokenRequestContext, $accessToken);
+
+        // initialise another cache with same token & ensure token key is still the same for user
+        $newTokenContext = new AuthorizationCodeContext("tenantId", "clientId", "clientSecret", "redirectUri", "code");
+        $newCache = new InMemoryAccessTokenCache($newTokenContext, $accessToken);
+        $this->assertEquals($delegatedTokenRequestContext->getCacheKey(), $newTokenContext->getCacheKey());
+        $this->assertEquals($cache->getAccessToken($delegatedTokenRequestContext->getCacheKey()), $newCache->getAccessToken($newTokenContext->getCacheKey()));
+    }
 }
