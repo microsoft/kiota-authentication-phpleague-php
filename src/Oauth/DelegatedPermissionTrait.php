@@ -40,7 +40,7 @@ trait DelegatedPermissionTrait
     public function setCacheKey(?AccessToken $accessToken = null): void
     {
         if ($accessToken && $accessToken->getToken()) {
-            $uniqueIdentifier = md5($accessToken->getToken());
+            $uniqueIdentifier = hash("sha256", $accessToken->getToken());
             $this->cacheKey = "{$this->getTenantId()}-{$this->getClientId()}-{$uniqueIdentifier}";
         }
     }

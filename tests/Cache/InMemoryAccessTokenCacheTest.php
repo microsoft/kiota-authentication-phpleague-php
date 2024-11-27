@@ -77,7 +77,7 @@ class InMemoryAccessTokenCacheTest extends TestCase
 
         $delegatedTokenRequestContext = new AuthorizationCodeContext("tenantId", "clientId", "clientSecret", "redirectUri", "code");
         $delegatedTokenRequestContext->setCacheKey($accessToken);
-        $this->assertEquals("tenantId-clientId-".md5('token'), $delegatedTokenRequestContext->getCacheKey());
+        $this->assertEquals("tenantId-clientId-".hash("sha256", 'token'), $delegatedTokenRequestContext->getCacheKey());
         $cache = new InMemoryAccessTokenCache($delegatedTokenRequestContext, $accessToken);
 
         // initialise another cache with same token & ensure token key is still the same for user
