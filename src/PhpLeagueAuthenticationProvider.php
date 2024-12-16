@@ -67,10 +67,10 @@ class PhpLeagueAuthenticationProvider extends BaseBearerTokenAuthenticationProvi
     /**
      * Sets the Access Token Provider from child classes
      *
-     * @param AccessTokenProvider $accessTokenProvider
+     * @param PhpLeagueAccessTokenProvider $accessTokenProvider
      * @return void
      */
-    protected function setAccessTokenProvider(AccessTokenProvider $accessTokenProvider): void
+    protected function setAccessTokenProvider(PhpLeagueAccessTokenProvider $accessTokenProvider): void
     {
         $this->accessTokenProvider = $accessTokenProvider;
     }
