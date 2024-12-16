@@ -18,7 +18,7 @@ run `composer require microsoft/kiota-authentication-phpleague` or add the follo
 ```Shell
 {
     "require": {
-        "microsoft/kiota-authentication-phpleague": "^1.3.1"
+        "microsoft/kiota-authentication-phpleague": "^1.4.0"
     }
 }
 ```
