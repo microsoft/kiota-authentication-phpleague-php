@@ -8,7 +8,7 @@
 
 namespace Microsoft\Kiota\Authentication;
 
-
+use Microsoft\Kiota\Abstractions\Authentication\AccessTokenProvider;
 use Microsoft\Kiota\Abstractions\Authentication\BaseBearerTokenAuthenticationProvider;
 use Microsoft\Kiota\Authentication\Oauth\TokenRequestContext;
 
@@ -62,6 +62,17 @@ class PhpLeagueAuthenticationProvider extends BaseBearerTokenAuthenticationProvi
         );
         $authProvider->accessTokenProvider = $phpLeagueAccessTokenProvider;
         return $authProvider;
+    }
+
+    /**
+     * Sets the Access Token Provider from child classes
+     *
+     * @param AccessTokenProvider $accessTokenProvider
+     * @return void
+     */
+    protected function setAccessTokenProvider(AccessTokenProvider $accessTokenProvider): void
+    {
+        $this->accessTokenProvider = $accessTokenProvider;
     }
 
 }
