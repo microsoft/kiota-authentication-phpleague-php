@@ -15,10 +15,12 @@ Read more about Kiota [here](https://github.com/microsoft/kiota/blob/main/README
 
 run `composer require microsoft/kiota-authentication-phpleague` or add the following to your `composer.json` file:
 
-```Shell
+```
 {
     "require": {
+        // x-release-please-start-version
         "microsoft/kiota-authentication-phpleague": "^1.3.1"
+        // x-release-please-end
     }
 }
 ```
