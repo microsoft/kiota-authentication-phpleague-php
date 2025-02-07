@@ -9,15 +9,6 @@
             "email": "graphtooling@service.microsoft.com"
         }
     ],
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../../abstractions",
-            "options": {
-                "symlink": false
-            }
-        }
-    ],
     "require": {
         "php": "^7.4 || ^8.0",
         "league/oauth2-client": "^2.6.1",
