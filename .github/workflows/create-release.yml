@@ -1,0 +1,40 @@
+name: "Tag & create GitHub release"
+
+on:
+  push:
+    branches:
+      - main
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Get lib version and set environment variable
+      run: |
+        VERSION=$(grep 'VERSION' src/Constants.php |  grep -oE '[0-9]+\.[0-9]+\.([0-9]+|[0-9]+-[a-z]+)')
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Create and publish tag
+      run: |
+        git tag $VERSION
+        if [[ $? -ne 0 ]]; then
+          echo "Tag $VERSION already exists. Skipping tag creation."
+          exit 1
+        fi
+        git push origin $VERSION
+
+  create-release:
+    needs: create-tag
+    runs-on: ubuntu-latest
+    steps:
+    - name: Github Release
+      uses: anton-yurchenko/git-release@v5.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+        RELEASE_NAME_PREFIX: "Release: "
