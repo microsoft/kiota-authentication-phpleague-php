@@ -1,0 +1,35 @@
+name: "Re-run checks on Release PRs"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  PR_URL: ${{ github.event.pull_request.html_url }}
+
+jobs:
+  rerun-checks:
+    if: ${{ github.actor == 'microsoft-graph-devx-bot[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Kiota Abstractions needs to be released first for PR checks to pass
+    # We delay before re-running checks to ensure Abstractions is already released
+    - name: Delay and re-run checks
+      run: |
+        needsRerun=$(gh pr checks $PR_URL --required --json bucket --jq '.[] | select(.bucket != "pass") | .bucket')
+        if [[ $needsRerun ]]; then
+          sleep 300
+          gh pr checks $PR_URL --required --json link --jq .[].link | grep -oP '/runs/\K\d+' | { read runId; gh run rerun $runId; }
+        fi
