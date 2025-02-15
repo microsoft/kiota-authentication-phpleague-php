@@ -9,9 +9,14 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: write
+
 jobs:
   create-tag:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.VERSION }}
     steps:
     - uses: actions/checkout@v4
 
@@ -19,6 +24,7 @@ jobs:
       run: |
         VERSION=$(grep 'VERSION' src/Constants.php |  grep -oE '[0-9]+\.[0-9]+\.([0-9]+|[0-9]+-[a-z]+)')
         echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Create and publish tag
       run: |
@@ -33,8 +39,10 @@ jobs:
     needs: create-tag
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
     - name: Github Release
-      uses: anton-yurchenko/git-release@v5.0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
-        RELEASE_NAME_PREFIX: "Release: "
+      uses: taiki-e/create-gh-release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN}}
+        ref: refs/tags/${{ needs.create-tag.outputs.version }}
+        changelog: "CHANGELOG.md"
