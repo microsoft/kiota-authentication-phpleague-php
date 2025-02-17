@@ -21,6 +21,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Get lib version and set environment variable
+      id: get-version
       run: |
         VERSION=$(grep 'VERSION' src/Constants.php |  grep -oE '[0-9]+\.[0-9]+\.([0-9]+|[0-9]+-[a-z]+)')
         echo "VERSION=$VERSION" >> $GITHUB_ENV
