@@ -26,9 +26,12 @@ jobs:
 
     # Kiota Abstractions needs to be released first for PR checks to pass
     # We delay before re-running checks to ensure Abstractions is already released
+    # We sleep before re-running checks to ensure the status checks have time to update (https://github.com/cli/cli/pull/2279#discussion_r513610296)
+    # Fetching checks on recently created branches can return a false "no required checks reported on the ... branch" error
     - name: Delay and re-run checks
       run: |
-        needsRerun=$(gh pr checks $PR_URL --required --json bucket --jq '.[] | select(.bucket != "pass") | .bucket')
+        sleep 30
+        needsRerun=$(gh pr checks $PR_URL --required --watch --json bucket --jq '.[] | select(.bucket != "pass") | .bucket')
         if [[ $needsRerun ]]; then
           sleep 300
           gh pr checks $PR_URL --required --json link --jq .[].link | grep -oP '/runs/\K\d+' | { read runId; gh run rerun $runId; }
