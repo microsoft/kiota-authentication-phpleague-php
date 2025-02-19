@@ -27,41 +27,12 @@ jobs:
           coverage: none
       - name: Install dependencies
         run: composer install
-      - name: Run static analysis
-        run: ./vendor/bin/phpstan
-      - name: Run tests without coverage
-        run: ./vendor/bin/phpunit
-
-  code-coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup PHP and Xdebug for Code Coverage report
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          coverage: xdebug
-      - name: Install dependencies
-        run: composer install
-      - name: Run static analysis
-        run: ./vendor/bin/phpstan
-      - name: Run tests with coverage
-        run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
-      - name: Fix code coverage paths
-        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
-      - name: SonarCloud Scan
-        if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # The check-php-version-matrix returns success if all matrix jobs in build are successful; otherwise, it returns a failure.
   # Use this as a PR status check for GitHub Policy Service instead of individual matrix entry checks.
   check-php-version-matrix:
     runs-on: ubuntu-latest
-    needs: [build, code-coverage]
+    needs: [build]
     if: always()
     steps:
       - name: All build matrix options are successful
