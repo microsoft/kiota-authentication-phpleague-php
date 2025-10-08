@@ -36,7 +36,7 @@ class ContinuousAccessEvaluationException extends \Exception
      * @param int $code
      * @param Throwable|null $previous
      */
-    public function __construct(string $message = "", string $claims = '', int $code = 0, Throwable $previous = null)
+    public function __construct(string $message = "", string $claims = '', int $code = 0, ?Throwable $previous = null)
     {
         $this->claims = $claims;
         parent::__construct($message, $code, $previous);
