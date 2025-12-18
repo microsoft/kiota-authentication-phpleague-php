@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2](https://github.com/microsoft/kiota-php/compare/microsoft-kiota-authentication-phpleague-v1.5.1...microsoft-kiota-authentication-phpleague-v1.5.2) (2025-12-18)
+
+
+### Bug Fixes
+
+* Add compatibility with firebase/php-jwt v7 ([f591a46](https://github.com/microsoft/kiota-php/commit/f591a46549adf027a89185467472911f8505c633))
+
 ## [1.5.1](https://github.com/microsoft/kiota-php/compare/microsoft-kiota-authentication-phpleague-v1.5.0...microsoft-kiota-authentication-phpleague-v1.5.1) (2025-10-08)
 
 

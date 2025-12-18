@@ -19,7 +19,7 @@ run `composer require microsoft/kiota-authentication-phpleague` or add the follo
 {
     "require": {
         // x-release-please-start-version
-        "microsoft/kiota-authentication-phpleague": "^1.5.1"
+        "microsoft/kiota-authentication-phpleague": "^1.5.2"
         // x-release-please-end
     }
 }
