@@ -13,7 +13,7 @@
         "php": "^7.4 || ^8.0",
         "league/oauth2-client": "^2.6.1",
         "microsoft/kiota-abstractions": "^1.5.1",
-        "firebase/php-jwt": "^v6.0.0",
+        "firebase/php-jwt": "^6 || ^7",
         "ramsey/uuid": "^4.2.3",
         "ext-openssl": "*",
         "ext-json": "*"
