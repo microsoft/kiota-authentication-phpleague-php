@@ -12,7 +12,7 @@
     "require": {
         "php": "^8.2",
         "league/oauth2-client": "^2.6.1",
-        "microsoft/kiota-abstractions": "^2.0.1",
+        "microsoft/kiota-abstractions": "^2.0.2",
         "firebase/php-jwt": "^6 || ^7",
         "ramsey/uuid": "^4.2.3",
         "ext-openssl": "*",
