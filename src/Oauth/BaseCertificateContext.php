@@ -113,7 +113,7 @@ class BaseCertificateContext
         return [
             'client_id' => $this->clientId,
             'client_assertion' => $this->clientAssertion,
-            'client_assertion_type' => 'urn:ietf:params:Oauth:client-assertion-type:jwt-bearer',
+            'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
             'refresh_token' => $refreshToken,
             'grant_type' => 'refresh_token'
         ];
