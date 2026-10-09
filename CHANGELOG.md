@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1](https://github.com/microsoft/kiota-php/compare/microsoft-kiota-authentication-phpleague-v2.2.0...microsoft-kiota-authentication-phpleague-v2.2.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* case in client_assertion_type parameter ([#113](https://github.com/microsoft/kiota-php/issues/113)) ([4cf0d23](https://github.com/microsoft/kiota-php/commit/4cf0d23c4215b5b22dfc8a275de5157561853cf5))
+
 ## [2.2.0](https://github.com/microsoft/kiota-php/compare/microsoft-kiota-authentication-phpleague-v2.1.1...microsoft-kiota-authentication-phpleague-v2.2.0) (2026-10-06)
 
 
