@@ -2,7 +2,6 @@
 
 ![Build Status](https://github.com/microsoft/kiota-authentication-phpleague-php/actions/workflows/pr-validation.yml/badge.svg)
 [![Latest Stable Version](https://poser.pugx.org/microsoft/kiota-authentication-phpleague/version)](https://packagist.org/packages/microsoft/kiota-authentication-phpleague)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=microsoft_kiota-authentication-phpleague-php&metric=coverage)](https://sonarcloud.io/dashboard?id=microsoft_kiota-authentication-phpleague-php)
 
 The Kiota Authentication provider library for PHP uses the [PHP League OAuth 2.0 client](https://oauth2-client.thephpleague.com/) to authenticate against the Microsoft Identity platform.
 
@@ -19,7 +18,7 @@ run `composer require microsoft/kiota-authentication-phpleague` or add the follo
 {
     "require": {
         // x-release-please-start-version
-        "microsoft/kiota-authentication-phpleague": "^2.2.3"
+        "microsoft/kiota-authentication-phpleague": "^2.3.0"
         // x-release-please-end
     }
 }

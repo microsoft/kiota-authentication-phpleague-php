@@ -7,4 +7,3 @@
 .gitignore export-ignore
 phpstan.neon export-ignore
 phpunit.xml export-ignore
-sonar-project.properties export-ignore
